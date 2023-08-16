@@ -37,21 +37,13 @@ public class GameMapSerializer {
                 for(int i=0;i<width;i++) {
                     System.out.print(charArray);
                     switch (charArray[i]) {
-                        case '>':
-                            spaces[j][i] = new ElevationFactory().crateSpace(i,j,0);
-                            break;
-                        case '$':
-                            spaces[j][i] = new MountainFactory().crateSpace(i,j,0);
-                            break;
-                        case '_':
-                            spaces[j][i] = new PastureFactory().crateSpace(i,j,0);
-                            break;
-                        case '-':
-                            spaces[j][i] = new WaterFactory().crateSpace(i,j,0);
-                            break;
-                        case '+':
-                            spaces[j][i] = new WoodFactory().crateSpace(i,j,0);
-                            break;
+                        case '>' -> spaces[j][i] = new ElevationFactory().crateSpace(i, j, 0);
+                        case '$' -> spaces[j][i] = new MountainFactory().crateSpace(i, j, 0);
+                        case '_' -> spaces[j][i] = new PastureFactory().crateSpace(i, j, 0);
+                        case '-' -> spaces[j][i] = new WaterFactory().crateSpace(i, j, 0);
+                        case '+' -> spaces[j][i] = new WoodFactory().crateSpace(i, j, 0);
+                        case '|' -> spaces[j][i] = new GateFactory().crateSpace(i, j, 0);
+                        default -> System.err.println("There was an error for space " + charArray[i] + " at spaces [" + i + "," + j + "] ");
                     }
                 }
                 line = bw.readLine();

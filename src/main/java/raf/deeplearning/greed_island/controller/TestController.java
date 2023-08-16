@@ -20,6 +20,7 @@ public class TestController {
 //        System.out.println(Arrays.deepToString(gameMap.getSpaces()));
 //        System.out.println(gameMap.toJson());
         String path = "/home/milan/IdeaProjects/greed_island/src/main/resources/static/map.txt";
+        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map.txt";
 //        GameMapSerializer.toSimpleMap(gameMap,path);
         gameMap = GameMapSerializer.fromSimpleMap(path);
     }
