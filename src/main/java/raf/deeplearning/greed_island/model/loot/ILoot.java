@@ -1,6 +1,9 @@
 package raf.deeplearning.greed_island.model.loot;
 
-public interface ILoot {
+
+import java.io.Serializable;
+
+public interface ILoot extends Serializable {
 
     int getValueInGold();
 }
