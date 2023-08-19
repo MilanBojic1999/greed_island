@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 public class Gem implements ILoot{
 
-    int value;
+    private  int value;
 
     public Gem() {
         this.value = 20;

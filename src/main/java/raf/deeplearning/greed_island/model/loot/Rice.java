@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class Rice implements ILoot{
 
-    int value;
+    private  int value;
 
     public Rice() {
         value = 4;

@@ -2,7 +2,7 @@ package raf.deeplearning.greed_island.model.loot;
 
 public class Ore implements ILoot{
 
-    int value;
+    private  int value;
 
     public Ore() {
         this.value = 14;

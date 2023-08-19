@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class Bones implements ILoot{
 
-    int value;
+    private  int value;
 
     public Bones() {
         value = 2;

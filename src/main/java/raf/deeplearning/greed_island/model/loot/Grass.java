@@ -2,7 +2,7 @@ package raf.deeplearning.greed_island.model.loot;
 
 public class Grass implements ILoot{
 
-    int value;
+    private  int value;
 
     public Grass() {
         value = 0;

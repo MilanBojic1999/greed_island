@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class Stone implements ILoot{
 
-    int value;
+    private  int value;
 
     public Stone() {
         this.value = 3;

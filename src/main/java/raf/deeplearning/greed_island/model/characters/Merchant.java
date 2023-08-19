@@ -8,11 +8,18 @@ import raf.deeplearning.greed_island.model.utils.Pair;
 @Getter
 @Setter
 @AllArgsConstructor
-public class Villager implements INonPlayableCharacter{
+public class Merchant implements INonPlayableCharacter{
 
-    int x,y;
-    int fullAmountOfGold;
-    int currentAmountOfGold;
+    private int x,y;
+    private int fullAmountOfGold;
+    private int currentAmountOfGold;
+
+    public Merchant(int x, int y, int fullAmountOfGold) {
+        this.x = x;
+        this.y = y;
+        this.fullAmountOfGold = fullAmountOfGold;
+        this.currentAmountOfGold = fullAmountOfGold;
+    }
 
     @Override
     public void interactWithWorld() {

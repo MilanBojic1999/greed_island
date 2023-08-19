@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class Apple implements ILoot{
 
-    int value;
+    private  int value;
 
     public Apple() {
         value = 7;

@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class Wood implements ILoot{
 
-    int value;
+    private  int value;
 
     public Wood() {
         this.value = 2;
