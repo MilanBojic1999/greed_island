@@ -1,7 +1,6 @@
 package raf.deeplearning.greed_island.model;
 
 import raf.deeplearning.greed_island.model.spaces.ASpace;
-import raf.deeplearning.greed_island.model.spaces.Wood;
 import raf.deeplearning.greed_island.model.spaces.factory.*;
 
 import java.io.*;

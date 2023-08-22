@@ -32,7 +32,7 @@ public class Merchant implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithPlayer() {
+    public void interactWithPlayer(Player player) {
 
     }
 }

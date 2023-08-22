@@ -1,5 +1,9 @@
 package raf.deeplearning.greed_island.model.spaces;
 
+import raf.deeplearning.greed_island.model.loot.*;
+import raf.deeplearning.greed_island.model.loot.Wood;
+import raf.deeplearning.greed_island.model.utils.Randomizer;
+
 public class Mountain extends ASpace{
 
 
@@ -17,5 +21,24 @@ public class Mountain extends ASpace{
     @Override
     public char getSpaceSymbol() {
         return '$';
+    }
+
+    @Override
+    public ILoot loot() {
+        if(this.isLooted()) {
+            return null;
+        }
+        this.setLooted(true);
+
+        float number = Randomizer.getInstance().randomPresent();
+        if (number > 0.95) {
+            return new Gem();
+        } else if(number > 0.90) {
+            return new Ore();
+        } else if(number>0.75) {
+            return new Bones();
+        } else {
+            return new Stone();
+        }
     }
 }

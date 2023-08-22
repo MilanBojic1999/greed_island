@@ -1,5 +1,8 @@
 package raf.deeplearning.greed_island.model.spaces;
 
+import raf.deeplearning.greed_island.model.loot.ILoot;
+import raf.deeplearning.greed_island.model.loot.Stone;
+
 public class Gate extends ASpace{
 
 
@@ -15,5 +18,15 @@ public class Gate extends ASpace{
     @Override
     public char getSpaceSymbol() {
         return '|';
+    }
+
+    @Override
+    public ILoot loot() {
+        if(this.isLooted()) {
+            return null;
+        }
+        this.setLooted(true);
+
+        return new Stone();
     }
 }

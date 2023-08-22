@@ -1,41 +1,39 @@
 package raf.deeplearning.greed_island.model.spaces;
 
 import raf.deeplearning.greed_island.model.loot.*;
-import raf.deeplearning.greed_island.model.loot.Wood;
 import raf.deeplearning.greed_island.model.utils.Randomizer;
 
-public class Pasture extends ASpace{
+public class Woods extends ASpace{
 
-    public Pasture(int x, int y,int z) {
+    public Woods(int x, int y, int z) {
         super(x,y,z,SpaceType.UNDISCOVERED,true);
     }
 
     @Override
     public String toString() {
-        return "PASTURE (" + getX() +", "+ getY()+")";
+        return "WOOD (" + getX() +", "+ getY()+")";
     }
 
 
     @Override
     public char getSpaceSymbol() {
-        return '_';
+        return '+';
     }
 
     @Override
     public ILoot loot() {
-        if (this.isLooted()) {
+        if(this.isLooted()) {
             return null;
         }
         this.setLooted(true);
 
         float number = Randomizer.getInstance().randomPresent();
         if (number > 0.95) {
-            return new Gem();
-        } else if (number > 0.55) {
-            return new Rice();
+            return new Stone();
+        } else if(number > 0.55) {
+            return new Apple();
         } else {
-            return new Grass();
+            return new Wood();
         }
-
     }
 }
