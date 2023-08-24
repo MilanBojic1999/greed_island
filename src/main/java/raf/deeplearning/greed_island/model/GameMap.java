@@ -4,8 +4,11 @@ import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.characters.ICharacter;
+import raf.deeplearning.greed_island.model.exception.UnknownCharacter;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
+import raf.deeplearning.greed_island.model.spaces.Water;
 import raf.deeplearning.greed_island.model.spaces.factory.*;
+import raf.deeplearning.greed_island.model.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,11 +24,13 @@ public class GameMap {
     private List<ICharacter> characters;
 
     private static GameMap currentGameMap;
+    private final Water outboundWater;
 
     public GameMap(int width, int height) {
         this.width = width;
         this.height = height;
         this.spaces = new ASpace[height][width];
+        this.outboundWater = new Water(-1,-1,-1);
 
         characters = new ArrayList<>();
         ISpaceFactory[] all_available_spaces = new ISpaceFactory[]{new ElevationFactory(),new MountainFactory(),new PastureFactory(),new WaterFactory(),new WoodFactory(),};
@@ -44,6 +49,35 @@ public class GameMap {
         }
 
         return currentGameMap;
+    }
+
+
+    public ASpace[][] lookupForCharacter(ICharacter character) throws Exception{
+        int subMatrixSize = 3;
+
+        int x = 0,y = 0;
+
+        if(!this.characters.contains(character)) {
+            throw new UnknownCharacter(character);
+        }
+
+        Pair p = character.getCoordinates();
+
+        x = p.getX1();
+        y = p.getX2();
+
+        ASpace[][] subMatrix = new ASpace[subMatrixSize][subMatrixSize];
+
+        for (int i = x-1; i < x+2; i++) {
+            for (int j = y-1; j < y+2; j++) {
+                if(i<0 || i > height || j<0 || j > width)
+                    subMatrix[i][j] = this.outboundWater;
+                else
+                    subMatrix[i][j] = this.spaces[i][j];
+            }
+        }
+
+        return subMatrix;
     }
 
     @Override

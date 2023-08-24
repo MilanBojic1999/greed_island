@@ -25,4 +25,8 @@ public class Randomizer {
     public int randomMove() {
         return this.random.nextInt(4);
     }
+
+    public int randomInt(int bound) {
+        return this.random.nextInt(bound);
+    }
 }
