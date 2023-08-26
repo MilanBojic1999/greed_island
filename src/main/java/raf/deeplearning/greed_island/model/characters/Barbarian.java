@@ -1,11 +1,19 @@
 package raf.deeplearning.greed_island.model.characters;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import raf.deeplearning.greed_island.model.utils.Pair;
 import raf.deeplearning.greed_island.model.utils.Randomizer;
 
 import java.util.Map;
 
+@Getter
+@Setter
+@AllArgsConstructor
 public class Barbarian implements INonPlayableCharacter{
+
+    private int x,y;
 
     @Override
     public void interactWithWorld() {
@@ -14,7 +22,7 @@ public class Barbarian implements INonPlayableCharacter{
 
     @Override
     public Pair getCoordinates() {
-        return null;
+        return new Pair(x,y);
     }
 
     @Override
@@ -34,5 +42,10 @@ public class Barbarian implements INonPlayableCharacter{
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public char getCharacterSymbol() {
+        return 'B';
     }
 }

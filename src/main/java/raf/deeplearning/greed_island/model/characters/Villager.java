@@ -8,7 +8,7 @@ import raf.deeplearning.greed_island.model.utils.Pair;
 @Getter
 @Setter
 @AllArgsConstructor
-public class Villiger implements INonPlayableCharacter{
+public class Villager implements INonPlayableCharacter{
 
     private int x,y;
 
@@ -26,5 +26,10 @@ public class Villiger implements INonPlayableCharacter{
     @Override
     public void interactWithPlayer(Player player) {
 
+    }
+
+    @Override
+    public char getCharacterSymbol() {
+        return 'V';
     }
 }

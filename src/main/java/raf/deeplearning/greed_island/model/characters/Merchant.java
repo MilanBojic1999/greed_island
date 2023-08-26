@@ -35,5 +35,10 @@ public class Merchant implements INonPlayableCharacter{
     public void interactWithPlayer(Player player) {
 
     }
+
+    @Override
+    public char getCharacterSymbol() {
+        return 'M';
+    }
 }
 

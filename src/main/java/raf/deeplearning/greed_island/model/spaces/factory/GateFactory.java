@@ -7,6 +7,6 @@ public class GateFactory implements ISpaceFactory{
 
     @Override
     public ASpace crateSpace(int x, int y, int z) {
-        return new Gate(x,y,z);
+        return new Gate(x,y,z, 1000);
     }
 }

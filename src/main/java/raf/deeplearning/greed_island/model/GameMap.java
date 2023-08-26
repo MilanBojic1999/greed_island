@@ -3,12 +3,14 @@ package raf.deeplearning.greed_island.model;
 import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
-import raf.deeplearning.greed_island.model.characters.ICharacter;
+import raf.deeplearning.greed_island.model.characters.*;
 import raf.deeplearning.greed_island.model.exception.UnknownCharacter;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
+import raf.deeplearning.greed_island.model.spaces.Gate;
 import raf.deeplearning.greed_island.model.spaces.Water;
 import raf.deeplearning.greed_island.model.spaces.factory.*;
 import raf.deeplearning.greed_island.model.utils.Pair;
+import raf.deeplearning.greed_island.model.utils.Randomizer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +24,8 @@ public class GameMap {
     private int width, height;
     private ASpace[][] spaces;
     private List<ICharacter> characters;
+    private Player thePlayer;
+
 
     private static GameMap currentGameMap;
     private final Water outboundWater;
@@ -32,7 +36,13 @@ public class GameMap {
         this.spaces = new ASpace[height][width];
         this.outboundWater = new Water(-1,-1,-1);
 
+        thePlayer = new Player(height/2-1,width/2-1);
+
         characters = new ArrayList<>();
+        this.characters.add(new Barbarian(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
+        this.characters.add(new Villager(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
+        this.characters.add(new Merchant(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width),50));
+
         ISpaceFactory[] all_available_spaces = new ISpaceFactory[]{new ElevationFactory(),new MountainFactory(),new PastureFactory(),new WaterFactory(),new WoodFactory(),};
         Random r = new Random();
         for(int i=0;i<height;i++) {
@@ -40,6 +50,9 @@ public class GameMap {
                 this.spaces[i][j] = all_available_spaces[r.nextInt(5)].crateSpace(i,j,1);
             }
         }
+
+        this.spaces[height/2][width/2] = new Gate(height/2,width/2,1, 105);
+
     }
 
     public static GameMap getInstance() {
@@ -106,6 +119,11 @@ public class GameMap {
                     .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString());
             sb.append("\n");
         }
+        for(ICharacter character:characters) {
+            Pair pair = character.getCoordinates();
+            sb.setCharAt((pair.getX1()*width) + 1 + pair.getX2(),character.getCharacterSymbol());
+        }
+
         return sb.toString();
 
     }

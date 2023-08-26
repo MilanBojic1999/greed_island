@@ -57,4 +57,9 @@ public class Player implements ICharacter{
 
         this.bagOfLoot.put(item,contains+number);
     }
+
+    @Override
+    public char getCharacterSymbol() {
+        return 'P';
+    }
 }
