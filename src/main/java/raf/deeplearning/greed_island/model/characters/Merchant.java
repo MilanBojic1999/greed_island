@@ -12,7 +12,7 @@ public class Merchant implements INonPlayableCharacter{
 
     private int x,y;
     private int fullAmountOfGold;
-    private int currentAmountOfGold;
+    private transient int currentAmountOfGold;
 
     public Merchant(int x, int y, int fullAmountOfGold) {
         this.x = x;

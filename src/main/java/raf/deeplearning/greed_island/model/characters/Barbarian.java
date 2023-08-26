@@ -10,10 +10,14 @@ import java.util.Map;
 
 @Getter
 @Setter
-@AllArgsConstructor
 public class Barbarian implements INonPlayableCharacter{
 
     private int x,y;
+
+    public Barbarian(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
     @Override
     public void interactWithWorld() {

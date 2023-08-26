@@ -27,8 +27,8 @@ public class GameMap {
     private Player thePlayer;
 
 
-    private static GameMap currentGameMap;
-    private final Water outboundWater;
+    private transient static GameMap currentGameMap;
+    private transient final Water outboundWater;
 
     public GameMap(int width, int height) {
         this.width = width;
@@ -42,6 +42,7 @@ public class GameMap {
         this.characters.add(new Barbarian(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
         this.characters.add(new Villager(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
         this.characters.add(new Merchant(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width),50));
+        characters.add(thePlayer);
 
         ISpaceFactory[] all_available_spaces = new ISpaceFactory[]{new ElevationFactory(),new MountainFactory(),new PastureFactory(),new WaterFactory(),new WoodFactory(),};
         Random r = new Random();
@@ -121,15 +122,10 @@ public class GameMap {
         }
         for(ICharacter character:characters) {
             Pair pair = character.getCoordinates();
-            sb.setCharAt((pair.getX1()*width) + 1 + pair.getX2(),character.getCharacterSymbol());
+            sb.setCharAt((pair.getX1()*(width+1)) + pair.getX2(),character.getCharacterSymbol());
         }
 
         return sb.toString();
 
-    }
-
-    public String toJson() {
-        Gson gs = new Gson();
-        return gs.toJson(this);
     }
 }

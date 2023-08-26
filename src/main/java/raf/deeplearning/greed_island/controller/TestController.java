@@ -7,22 +7,34 @@ import org.springframework.web.bind.annotation.RestController;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.GameMapSerializer;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 @RestController
 @CrossOrigin
 public class TestController {
 
-    private final GameMap gameMap;
+    private GameMap gameMap;
 
     public TestController() {
-//        gameMap = GameMap.getInstance();
+        gameMap = GameMap.getInstance();
 //        System.out.println(Arrays.deepToString(gameMap.getSpaces()));
 //        System.out.println(gameMap.toJson());
         String path = "/home/milan/IdeaProjects/greed_island/src/main/resources/static/map.txt";
-        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map.txt";
-//        GameMapSerializer.toSimpleMap(gameMap,path);
-        gameMap = GameMapSerializer.fromSimpleMap(path);
+        String json_path = "/home/milan/IdeaProjects/greed_island/src/main/resources/static/map_test.json";
+
+        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test2.txt";
+        json_path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test.json";
+        try {
+//            gameMap = GameMapSerializer.fromSimpleMap(path);
+            gameMap = GameMapSerializer.fromJsonMap(json_path);
+            GameMapSerializer.toSimpleMap(gameMap,path);
+
+//            GameMapSerializer.toJsonMap(gameMap,json_path);
+        } catch (Exception e) {
+            gameMap = GameMap.getInstance();
+            e.printStackTrace();
+        }
     }
 
     @GetMapping("/")

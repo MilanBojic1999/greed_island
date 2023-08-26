@@ -17,8 +17,6 @@ public abstract class ASpace {
     private boolean reachable;
     private boolean isLooted;
 
-    public abstract char getSpaceSymbol();
-
     public ASpace(int x, int y,int z,SpaceType type,boolean reachable) {
         this.x = x;
         this.y = y;
@@ -40,4 +38,7 @@ public abstract class ASpace {
     }
 
     public abstract ILoot loot();
+    public abstract char getSpaceSymbol();
+
+
 }

@@ -12,7 +12,6 @@ public class Villager implements INonPlayableCharacter{
 
     private int x,y;
 
-
     @Override
     public void interactWithWorld() {
 
