@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import raf.deeplearning.greed_island.model.characters.ICharacter;
 import raf.deeplearning.greed_island.model.loot.ILoot;
 
 @Getter
@@ -16,6 +17,7 @@ public abstract class ASpace {
     private SpaceType type;
     private boolean reachable;
     private boolean isLooted;
+    private ICharacter occupyingCharacter;
 
     public ASpace(int x, int y,int z,SpaceType type,boolean reachable) {
         this.x = x;
@@ -24,6 +26,7 @@ public abstract class ASpace {
         this.type = type;
         this.reachable = reachable;
         this.isLooted = false;
+        this.occupyingCharacter = null;
     }
 
     @Override

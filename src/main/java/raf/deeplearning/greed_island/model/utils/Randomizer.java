@@ -21,7 +21,12 @@ public class Randomizer {
     public float randomPresent() {
         return this.random.nextFloat();
     }
-
+    /*
+        0 - left
+        1 - right
+        2 - up
+        3 - down
+     */
     public int randomMove() {
         return this.random.nextInt(4);
     }

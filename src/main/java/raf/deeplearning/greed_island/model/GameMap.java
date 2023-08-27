@@ -94,6 +94,18 @@ public class GameMap {
         return subMatrix;
     }
 
+    public void moveCharacter(ICharacter character,int x,int y){
+        if(!this.spaces[y][x].isReachable() || this.spaces[y][x].getOccupyingCharacter() != null)
+            return;
+
+        this.spaces[y][x].setOccupyingCharacter(character);
+        Pair p = character.getCoordinates();
+        this.spaces[p.getX2()][p.getX1()].setOccupyingCharacter(null);
+        p.setX1(x);
+        p.setX2(y);
+        character.setCoordinates(p);
+    }
+
     @Override
     public String toString() {
         return "Map{" +
@@ -126,6 +138,6 @@ public class GameMap {
         }
 
         return sb.toString();
-
     }
+
 }

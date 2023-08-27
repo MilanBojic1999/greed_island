@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model.characters;
 import lombok.Getter;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.exception.NonexistingItem;
+import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
 
 import java.util.HashMap;
@@ -24,7 +25,7 @@ public class Player implements ICharacter{
     }
 
     @Override
-    public void interactWithWorld() {
+    public void interactWithWorld(ASpace[][] view) {
 
     }
 
@@ -32,6 +33,14 @@ public class Player implements ICharacter{
     public Pair getCoordinates() {
         return new Pair(x,y);
     }
+
+    @Override
+    public void setCoordinates(Pair p) {
+        this.setX(p.getX1());
+        this.setY(p.getX2());
+    }
+
+
 
     public void removeItems(String item, int number) throws Exception {
         if(!this.bagOfLoot.containsKey(item)) {

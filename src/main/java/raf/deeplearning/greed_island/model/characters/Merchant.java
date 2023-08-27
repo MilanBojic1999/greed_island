@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model.characters;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
 
 @Getter
@@ -22,13 +23,19 @@ public class Merchant implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithWorld() {
+    public void interactWithWorld(ASpace[][] view) {
         currentAmountOfGold = fullAmountOfGold;
     }
 
     @Override
     public Pair getCoordinates() {
         return new Pair(x,y);
+    }
+
+    @Override
+    public void setCoordinates(Pair p) {
+        this.setX(p.getX1());
+        this.setY(p.getX2());
     }
 
     @Override
