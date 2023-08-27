@@ -106,6 +106,22 @@ public class GameMap {
         character.setCoordinates(p);
     }
 
+    public void playGame() {
+        while (true) {
+            try {
+                makeARound();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void makeARound() throws Exception {
+        for(ICharacter ch:characters) {
+            ch.interactWithWorld(this.lookupForCharacter(ch));
+        }
+    }
+
     @Override
     public String toString() {
         return "Map{" +

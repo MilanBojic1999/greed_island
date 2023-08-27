@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.GameMap;
+import raf.deeplearning.greed_island.model.loot.*;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
 import raf.deeplearning.greed_island.model.utils.Randomizer;
@@ -57,7 +58,21 @@ public class Villager implements INonPlayableCharacter{
 
     @Override
     public void interactWithPlayer(Player player) {
+        float number = Randomizer.getInstance().randomPresent();
+        ILoot loot;
+        if (number > 0.95) {
+            loot = new Gem();
+        } else if(number > 0.55) {
+            loot = new Wood();
+        } else {
+            loot = new Grass();
+        }
 
+        try {
+            player.addItems(loot.toString(),1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
