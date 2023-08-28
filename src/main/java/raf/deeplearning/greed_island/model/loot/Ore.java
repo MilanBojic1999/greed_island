@@ -12,4 +12,8 @@ public class Ore implements ILoot{
     public int getValueInGold() {
         return value;
     }
+
+    public String toString() {
+        return this.getClass().getSimpleName();
+    }
 }

@@ -8,6 +8,7 @@ import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
 import raf.deeplearning.greed_island.model.utils.Randomizer;
 
+import java.util.Arrays;
 import java.util.Map;
 
 @Getter
@@ -23,6 +24,7 @@ public class Barbarian implements INonPlayableCharacter{
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
+        System.out.println(Arrays.deepToString(view));
         if(view[0][0].getOccupyingCharacter() instanceof Player) {
             GameMap.getInstance().moveCharacter(this,x,y-1);
         } else if(view[0][1].getOccupyingCharacter() instanceof Player) {
@@ -63,16 +65,19 @@ public class Barbarian implements INonPlayableCharacter{
 
     @Override
     public void interactWithPlayer(Player player) {
+        System.out.println("Barbarian is taking your loot!");
         Map<String,Integer> bag = player.getBagOfLoot();
-
-        String[] items = (String[]) bag.keySet().toArray();
+        System.out.println(bag);
+        if(bag.isEmpty())
+            return;
+        String[] items = (String[]) bag.keySet().toArray(String[]::new);
 
         int itemInd = Randomizer.getInstance().randomInt(items.length);
 
         int itemCount = bag.get(items[itemInd]);
 
         int takeCount = Randomizer.getInstance().randomInt(itemCount);
-
+        System.out.println("Barbarian took " + takeCount + " " + items[itemInd] + " from you!");
         try {
             player.removeItems(items[itemInd],takeCount);
         } catch (Exception e) {

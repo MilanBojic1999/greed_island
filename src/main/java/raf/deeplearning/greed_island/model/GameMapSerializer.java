@@ -77,7 +77,7 @@ public class GameMapSerializer {
         int height = Integer.parseInt(sz[0]);
         int width = Integer.parseInt(sz[1]);
         ASpace[][] spaces = new ASpace[height][width];
-        System.out.println("LOL,"+height+","+width);
+
         String line = bw.readLine();
         Player player = null;
         List<ICharacter> characters = new ArrayList<>();
@@ -100,15 +100,15 @@ public class GameMapSerializer {
                         spaces[i][j] = returnSpaceFromChar(prev_char, i, j);
                     }
                     case 'V' -> {
-                        characters.add(new Barbarian(i,j));
-                        spaces[i][j] = returnSpaceFromChar(prev_char,i,j);
-                    }
-                    case 'B' -> {
                         characters.add(new Villager(i,j));
                         spaces[i][j] = returnSpaceFromChar(prev_char,i,j);
                     }
+                    case 'B' -> {
+                        characters.add(new Barbarian(i,j));
+                        spaces[i][j] = returnSpaceFromChar(prev_char,i,j);
+                    }
                     default -> {
-                        System.out.println(i+","+j);
+
                         spaces[i][j] = returnSpaceFromChar(charArray[j], i, j);
                         prev_char = charArray[j];
                     }

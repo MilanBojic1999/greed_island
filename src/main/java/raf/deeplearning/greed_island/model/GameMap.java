@@ -19,7 +19,7 @@ import java.util.Random;
 
 @Getter
 @Setter
-public class GameMap {
+public class GameMap implements Runnable{
 
     private int width, height;
     private ASpace[][] spaces;
@@ -35,6 +35,8 @@ public class GameMap {
         this.height = height;
         this.spaces = new ASpace[height][width];
         this.outboundWater = new Water(-1,-1,-1);
+        System.out.println(width + " " + height);
+        System.out.println(this.spaces.length + " " + this.spaces[0].length);
 
         thePlayer = new Player(height/2-1,width/2-1);
 
@@ -48,18 +50,28 @@ public class GameMap {
         Random r = new Random();
         for(int i=0;i<height;i++) {
             for(int j=0;j<width;j++) {
-                this.spaces[i][j] = all_available_spaces[r.nextInt(5)].crateSpace(i,j,1);
+//                this.spaces[i][j] = all_available_spaces[r.nextInt(5)].crateSpace(i,j,1);
+                if (i == 0 || j == 0 || i == height-1 || j == width-1)
+                    this.spaces[i][j] = this.outboundWater;
+                else
+                    this.spaces[i][j] = all_available_spaces[2].crateSpace(i,j,1);
             }
         }
 
         this.spaces[height/2][width/2] = new Gate(height/2,width/2,1, 105);
+
+        for(ICharacter character : characters) {
+            Pair p = character.getCoordinates();
+            this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
+        }
 
     }
 
     public static GameMap getInstance() {
         if (currentGameMap == null) {
             Random r = new Random();
-            currentGameMap = new GameMap(r.nextInt(20),r.nextInt(20));
+//            currentGameMap = new GameMap(r.nextInt(20)+5,r.nextInt(20)+5);
+            currentGameMap = new GameMap(10,10);
         }
 
         return currentGameMap;
@@ -84,10 +96,12 @@ public class GameMap {
 
         for (int i = x-1; i < x+2; i++) {
             for (int j = y-1; j < y+2; j++) {
-                if(i<0 || i > height || j<0 || j > width)
-                    subMatrix[i][j] = this.outboundWater;
-                else
-                    subMatrix[i][j] = this.spaces[i][j];
+                if(i<0 || i >= height || j<0 || j >= width)
+                    subMatrix[i-x+1][j-y+1] = this.outboundWater;
+                else {
+                    ASpace space = this.spaces[i][j];
+                    subMatrix[i - x + 1][j - y + 1] = space;
+                }
             }
         }
 
@@ -95,24 +109,37 @@ public class GameMap {
     }
 
     public void moveCharacter(ICharacter character,int x,int y){
-        if(!this.spaces[y][x].isReachable() || this.spaces[y][x].getOccupyingCharacter() != null)
+        if(x<0 || x >= height || y<0 || y >= width) {
+            return;
+        }
+        if(!this.spaces[x][y].isReachable() || this.spaces[x][y].getOccupyingCharacter() != null)
             return;
 
-        this.spaces[y][x].setOccupyingCharacter(character);
+        this.spaces[x][y].setOccupyingCharacter(character);
         Pair p = character.getCoordinates();
-        this.spaces[p.getX2()][p.getX1()].setOccupyingCharacter(null);
+        this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(null);
         p.setX1(x);
         p.setX2(y);
         character.setCoordinates(p);
     }
 
-    public void playGame() {
+    public void run() {
+        try {
+            Thread.sleep(10*1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         while (true) {
             try {
                 makeARound();
+                Thread.sleep(5*1000);
             } catch (Exception e) {
                 e.printStackTrace();
+                break;
             }
+
+
         }
     }
 
@@ -120,6 +147,7 @@ public class GameMap {
         for(ICharacter ch:characters) {
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
+        System.out.println("TICK");
     }
 
     @Override
@@ -156,4 +184,13 @@ public class GameMap {
         return sb.toString();
     }
 
+    public void setCharacters(List<ICharacter> characters) {
+
+        this.characters = characters;
+        for(ICharacter character : this.characters) {
+            System.out.println(character.toString());
+            Pair p = character.getCoordinates();
+            this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
+        }
+    }
 }

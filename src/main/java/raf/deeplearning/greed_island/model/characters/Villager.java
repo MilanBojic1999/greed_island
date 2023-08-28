@@ -18,6 +18,7 @@ public class Villager implements INonPlayableCharacter{
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
+
         if(view[0][0].getOccupyingCharacter() instanceof Player) {
             GameMap.getInstance().moveCharacter(this,x-1,y);
         } else if(view[0][1].getOccupyingCharacter() instanceof Player) {
@@ -25,6 +26,7 @@ public class Villager implements INonPlayableCharacter{
         } else if(view[0][2].getOccupyingCharacter() instanceof Player) {
             GameMap.getInstance().moveCharacter(this,x+1,y);
         } else if(view[1][0].getOccupyingCharacter() instanceof Player) {
+            System.out.println("Villager: Hello there, I am a villager. I can give you a potion if you give me a coin.");
             interactWithPlayer(GameMap.getInstance().getThePlayer());
         } else if(view[1][2].getOccupyingCharacter() instanceof Player) {
             interactWithPlayer(GameMap.getInstance().getThePlayer());
@@ -58,6 +60,7 @@ public class Villager implements INonPlayableCharacter{
 
     @Override
     public void interactWithPlayer(Player player) {
+        System.out.println("Villager: Hello there, I have a present for you!");
         float number = Randomizer.getInstance().randomPresent();
         ILoot loot;
         if (number > 0.95) {
