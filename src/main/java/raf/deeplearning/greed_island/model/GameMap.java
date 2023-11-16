@@ -26,6 +26,7 @@ public class GameMap implements Runnable{
     private List<ICharacter> characters;
     private Player thePlayer;
 
+    private volatile boolean running = true;
 
     private transient static GameMap currentGameMap;
     private transient final Water outboundWater;
@@ -130,7 +131,7 @@ public class GameMap implements Runnable{
             e.printStackTrace();
         }
 
-        while (true) {
+        while (running) {
             try {
                 makeARound();
                 Thread.sleep(5*1000);
@@ -145,6 +146,7 @@ public class GameMap implements Runnable{
 
     public void makeARound() throws Exception {
         for(ICharacter ch:characters) {
+            System.out.println(ch);
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
         System.out.println("TICK");
@@ -192,5 +194,15 @@ public class GameMap implements Runnable{
             Pair p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
         }
+    }
+
+    public static void tryToSetCurrentMap(GameMap gameMap) {
+        if(currentGameMap == null)
+            currentGameMap = gameMap;
+        else System.err.println("Map already exists:"+ currentGameMap);
+    }
+
+    public void endGame() {
+        this.running = false;
     }
 }
