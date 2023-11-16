@@ -64,6 +64,7 @@ public class GameMap implements Runnable{
         for(ICharacter character : characters) {
             Pair p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
+            character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
         }
 
     }
@@ -122,6 +123,10 @@ public class GameMap implements Runnable{
         p.setX1(x);
         p.setX2(y);
         character.setCoordinates(p);
+
+        character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
+
+
     }
 
     public void run() {
@@ -130,7 +135,7 @@ public class GameMap implements Runnable{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
+        int numberOfRounds = 0;
         while (running) {
             try {
                 makeARound();
@@ -139,9 +144,10 @@ public class GameMap implements Runnable{
                 e.printStackTrace();
                 break;
             }
-
-
+            ++numberOfRounds;
         }
+
+        System.out.println("Game over in " + numberOfRounds);
     }
 
     public void makeARound() throws Exception {

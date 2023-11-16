@@ -24,7 +24,7 @@ public class WorldService {
 //            gameMap = GameMapSerializer.fromJsonMap(json_path);
 //            GameMapSerializer.toSimpleMap(gameMap,path);
 
-            GameMapSerializer.toJsonMap(gameMap,json_path);
+//            GameMapSerializer.toJsonMap(gameMap,json_path);
         } catch (Exception e) {
             gameMap = GameMap.getInstance();
             e.printStackTrace();

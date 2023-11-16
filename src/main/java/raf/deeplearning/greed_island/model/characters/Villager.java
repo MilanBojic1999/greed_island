@@ -15,6 +15,12 @@ import raf.deeplearning.greed_island.model.utils.Randomizer;
 public class Villager implements INonPlayableCharacter{
 
     private int x,y;
+    private ASpace currentSpace;
+
+    public Villager(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
@@ -81,5 +87,10 @@ public class Villager implements INonPlayableCharacter{
     @Override
     public char getCharacterSymbol() {
         return 'V';
+    }
+
+    @Override
+    public void setCurrentSpace(ASpace space) {
+        this.currentSpace = space;
     }
 }

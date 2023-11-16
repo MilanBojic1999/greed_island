@@ -8,5 +8,5 @@ public interface ICharacter {
     Pair getCoordinates();
     void setCoordinates(Pair p);
     char getCharacterSymbol();
-
+    void setCurrentSpace(ASpace space);
 }

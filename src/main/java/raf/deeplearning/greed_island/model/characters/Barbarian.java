@@ -16,6 +16,7 @@ import java.util.Map;
 public class Barbarian implements INonPlayableCharacter{
 
     private int x,y;
+    private ASpace currentSpace;
 
     public Barbarian(int x, int y) {
         this.x = x;
@@ -88,5 +89,10 @@ public class Barbarian implements INonPlayableCharacter{
     @Override
     public char getCharacterSymbol() {
         return 'B';
+    }
+
+    @Override
+    public void setCurrentSpace(ASpace space) {
+        this.currentSpace = space;
     }
 }

@@ -12,6 +12,8 @@ import raf.deeplearning.greed_island.model.utils.Pair;
 public class Merchant implements INonPlayableCharacter{
 
     private int x,y;
+    private ASpace currentSpace;
+
     private int fullAmountOfGold;
     private transient int currentAmountOfGold;
 
@@ -41,6 +43,11 @@ public class Merchant implements INonPlayableCharacter{
     @Override
     public void interactWithPlayer(Player player) {
 
+    }
+
+    @Override
+    public void setCurrentSpace(ASpace space) {
+        this.currentSpace = space;
     }
 
     @Override
