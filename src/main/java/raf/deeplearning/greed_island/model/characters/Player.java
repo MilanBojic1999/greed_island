@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.exception.NonexistingItem;
+import raf.deeplearning.greed_island.model.loot.ILoot;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.spaces.Gate;
 import raf.deeplearning.greed_island.model.utils.Pair;
@@ -21,19 +22,27 @@ public class Player implements ICharacter{
     private ASpace currentSpace;
 
     private Map<String,Integer> bagOfLoot;
+    private Integer currentAmountOfGold;
     private BlockingDeque<PlayerActions> bufferedActions;
 
     public Player(int x, int y) {
         this.x = x;
         this.y = y;
 
-        bagOfLoot = new HashMap<>();
-        bufferedActions = new LinkedBlockingDeque<>();
+        this.bagOfLoot = new HashMap<>();
+        this.currentAmountOfGold = 0;
+        this.bufferedActions = new LinkedBlockingDeque<>();
+        System.out.println("Player is on space:  "+this.getCurrentSpace());
+    }
+
+    public Player() {
+        System.out.println("Empty constructor called");
+        throw new RuntimeException("Empty constructor called but shouldn't be called");
     }
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
-        System.out.println("Player is interacting with the world");
+        System.out.println("Player is interacting with the world" + this);
         while (this.bufferedActions.isEmpty()) {
             try {
                 Thread.sleep(50);
@@ -42,15 +51,15 @@ public class Player implements ICharacter{
                 return;
             }
         }
-//        System.out.println("Player is interacting with the world 2");
+        System.out.println("Player is interacting with the world 2" + this);
 
         PlayerActions action = this.bufferedActions.poll();
         System.out.println(action);
         switch (action) {
-            case UP -> GameMap.getInstance().moveCharacter(this,x-1,y);
-            case DOWN -> GameMap.getInstance().moveCharacter(this,x+1,y);
-            case LEFT -> GameMap.getInstance().moveCharacter(this,x,y-1);
-            case RIGHT -> GameMap.getInstance().moveCharacter(this,x,y+1);
+            case UP -> GameMap.getInstance().movePlayer(this,x-1,y);
+            case DOWN -> GameMap.getInstance().movePlayer(this,x+1,y);
+            case LEFT -> GameMap.getInstance().movePlayer(this,x,y-1);
+            case RIGHT -> GameMap.getInstance().movePlayer(this,x,y+1);
             case WAIT -> {
                 try {
                     Thread.sleep(10);
@@ -59,10 +68,25 @@ public class Player implements ICharacter{
                 }
             }
         }
+        if (this.getCurrentSpace() == null) {
+            return;
+        }
+
         System.out.println("Player is on space:  "+this.getCurrentSpace().getClass().getSimpleName());
         if (this.getCurrentSpace() instanceof Gate) {
             GameMap.getInstance().endGame();
         }
+
+        ILoot loot = this.getCurrentSpace().loot();
+        if(loot != null) {
+            System.out.println("Player is looting:  "+loot.getClass().getSimpleName());
+            try {
+                addItems(loot.getClass().getSimpleName(),1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
     @Override
@@ -111,5 +135,12 @@ public class Player implements ICharacter{
     @Override
     public void setCurrentSpace(ASpace space) {
         this.currentSpace = space;
+    }
+
+    public void addCoins(int coins) {
+        if(this.currentAmountOfGold + coins < 0) {
+            this.currentAmountOfGold = 0;
+        }
+        this.currentAmountOfGold += coins;
     }
 }

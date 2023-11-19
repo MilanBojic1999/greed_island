@@ -14,7 +14,7 @@ import java.util.Arrays;
 public class TestController {
 
     @Autowired
-    public TestController(WorldService worldService) {
+    public TestController() {
         System.out.println("TEST CONTROLLER");
     }
 

@@ -19,7 +19,7 @@ public class PlayerController {
 
 
     @Autowired
-    public PlayerController(WorldService worldService) {
+    public PlayerController() {
         System.out.println("PLAYER CONTROLLER");
     }
 
@@ -47,6 +47,11 @@ public class PlayerController {
 
     @PutMapping("/wait")
     public void waitAction() {
+        System.out.println("WAIT action");
+        System.err.println(GameMap.getInstance().getThePlayer());
+
+        System.err.println(GameMap.getInstance().hashCode());
+        System.out.println(GameMap.getInstance().getThePlayer());
         GameMap.getInstance().getThePlayer().getBufferedActions().add(PlayerActions.WAIT);
     }
 
@@ -67,7 +72,6 @@ public class PlayerController {
                      InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-
         }
 
         return full_value;

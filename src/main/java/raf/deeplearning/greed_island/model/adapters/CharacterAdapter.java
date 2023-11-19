@@ -29,6 +29,7 @@ public class CharacterAdapter extends TypeAdapter<ICharacter> {
         in.beginObject();
         if(in.nextName().equals("className")) {
             String className = in.nextString();
+            System.out.println(className);
             in.nextName();
             int x = in.nextInt();
             in.nextName();
@@ -43,8 +44,14 @@ public class CharacterAdapter extends TypeAdapter<ICharacter> {
                     character = new Villager(x,y);
                 case "Barbarian" ->
                     character = new Barbarian(x,y);
-                case "Player" ->
-                    character = new Player(x,y);
+                case "Player" -> {
+                    character = new Player(x, y);
+                    System.err.println("Player newwwww "+character);
+                    Thread.dumpStack();
+                    System.err.println("+++++++++++++++++++++++++++++++++++++++++++");
+                    System.err.flush();
+
+                }
             }
         }
         in.endObject();

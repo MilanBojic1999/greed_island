@@ -21,9 +21,9 @@ public class GameMapSerializer {
     private static Gson gson;
     static {
         GsonBuilder builder = new GsonBuilder();
-        builder.registerTypeAdapter(ICharacter.class, new CharacterAdapter());
-        builder.registerTypeAdapter(ASpace.class, new SpaceAdapter());
-        builder.registerTypeAdapter(ILoot.class, new LootAdapter());
+        builder.registerTypeHierarchyAdapter(ICharacter.class, new CharacterAdapter());
+        builder.registerTypeHierarchyAdapter(ASpace.class, new SpaceAdapter());
+        builder.registerTypeHierarchyAdapter(ILoot.class, new LootAdapter());
 
         gson = builder.create();
     }
@@ -92,7 +92,7 @@ public class GameMapSerializer {
                 switch (charArray[j]) {
                     case 'P' -> {
                         player = new Player(i,j);
-                        characters.add(player);
+//                        characters.add(player);
                         spaces[i][j] = returnSpaceFromChar(prev_char,i,j);
                     }
                     case 'M' -> {
@@ -129,6 +129,8 @@ public class GameMapSerializer {
         return gameMap;
     }
     public static void toJsonMap(GameMap map, String path) throws IOException {
+        System.out.println("Saving map to " + path);
+        System.out.println(map);
         File f = new File(path);
         if(!f.exists()) {
             f.createNewFile();

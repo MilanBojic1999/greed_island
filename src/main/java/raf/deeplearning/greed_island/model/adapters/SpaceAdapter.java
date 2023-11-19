@@ -11,6 +11,11 @@ import java.io.IOException;
 public class SpaceAdapter extends TypeAdapter<ASpace> {
     @Override
     public void write(JsonWriter out, ASpace value) throws IOException {
+        System.err.println(value);
+        if (value == null) {
+            out.nullValue();
+            return;
+        }
         out.beginObject();
         out.name("className").value(value.getClass().getSimpleName());
         out.name("x").value(value.getX());

@@ -43,5 +43,7 @@ public abstract class ASpace {
     public abstract ILoot loot();
     public abstract char getSpaceSymbol();
 
-
+    public void setLooted(boolean looted) {
+        isLooted = looted;
+    }
 }
