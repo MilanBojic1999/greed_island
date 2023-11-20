@@ -76,4 +76,9 @@ public class PlayerController {
 
         return full_value;
     }
+
+    @GetMapping("/inventory/gold")
+    public Integer getGold() {
+        return GameMap.getInstance().getThePlayer().getCurrentAmountOfGold();
+    }
 }

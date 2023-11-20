@@ -73,8 +73,14 @@ public class Player implements ICharacter{
         }
 
         System.out.println("Player is on space:  "+this.getCurrentSpace().getClass().getSimpleName());
-        if (this.getCurrentSpace() instanceof Gate) {
-            GameMap.getInstance().endGame();
+        if (this.getCurrentSpace() instanceof Gate ) {
+            Gate gate = (Gate) this.getCurrentSpace();
+            if(gate.getPriceOfEntrance() <= this.currentAmountOfGold)
+                GameMap.getInstance().endGame();
+            else {
+                System.out.println("Player doesn't have enough gold to enter the gate");
+            }
+            return;
         }
 
         ILoot loot = this.getCurrentSpace().loot();

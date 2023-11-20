@@ -161,6 +161,18 @@ public class GameMap implements Runnable{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        for(ICharacter character:this.characters) {
+            Pair p = character.getCoordinates();
+            this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
+            character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
+            System.out.println(character+" is occuping  "+character.getCurrentSpace());
+        }
+
+        Pair p = thePlayer.getCoordinates();
+        this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(thePlayer);
+        thePlayer.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
+        System.out.println(thePlayer+" is occuping  "+thePlayer.getCurrentSpace());
+
         int numberOfRounds = 0;
         while (running) {
             try {
