@@ -61,4 +61,8 @@ public class WorldService implements ApplicationRunner {
         Thread t1 = new Thread(GameMap.getInstance());
         t1.start();
     }
+
+    public void rerunGame() {
+        runGame();
+    }
 }

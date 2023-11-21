@@ -71,7 +71,7 @@ public class Barbarian implements INonPlayableCharacter{
         System.out.println(bag);
         if(bag.isEmpty())
             return;
-        String[] items = (String[]) bag.keySet().toArray(String[]::new);
+        String[] items = bag.keySet().toArray(String[]::new);
 
         int itemInd = Randomizer.getInstance().randomInt(items.length);
 
