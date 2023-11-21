@@ -77,6 +77,10 @@ public class Merchant implements INonPlayableCharacter{
 
         fullAmountOfGold = tmpGoldOfMerchant;
         player.setBagOfLoot(playerInventory);
+
+        int tmpGold = player.getCurrentAmountOfGold();
+        tmpGold += fullAmountOfGold-tmpGoldOfMerchant;
+        player.setCurrentAmountOfGold(tmpGold);
     }
 
     @Override

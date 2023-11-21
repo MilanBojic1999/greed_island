@@ -74,7 +74,7 @@ public class Villager implements INonPlayableCharacter{
         } else if(number > 0.55) {
             loot = new Wood();
         } else {
-            loot = new Grass();
+            loot = new Rice();
         }
 
         try {

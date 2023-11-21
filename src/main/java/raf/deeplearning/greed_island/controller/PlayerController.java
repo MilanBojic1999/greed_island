@@ -25,8 +25,6 @@ public class PlayerController {
 
     @PutMapping("/up")
     public void upAction() {
-        System.out.println("UP action");
-        System.out.println(GameMap.getInstance().getThePlayer() + "  WWWW  " + GameMap.getInstance());
         GameMap.getInstance().getThePlayer().getBufferedActions().add(PlayerActions.UP);
     }
 
@@ -47,11 +45,6 @@ public class PlayerController {
 
     @PutMapping("/wait")
     public void waitAction() {
-        System.out.println("WAIT action");
-        System.err.println(GameMap.getInstance().getThePlayer());
-
-        System.err.println(GameMap.getInstance().hashCode());
-        System.out.println(GameMap.getInstance().getThePlayer());
         GameMap.getInstance().getThePlayer().getBufferedActions().add(PlayerActions.WAIT);
     }
 
