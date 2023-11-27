@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import raf.deeplearning.greed_island.model.GameMap;
+import raf.deeplearning.greed_island.model.characters.ICharacter;
+import raf.deeplearning.greed_island.model.characters.Player;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.services.WorldService;
 
@@ -41,6 +43,14 @@ public class TestController {
             }
         }
 
+        for(ICharacter c:GameMap.getInstance().getCharacters()) {
+            matrix[c.getCoordinates().getX1()][c.getCoordinates().getX2()] = String.valueOf(c.getCharacterSymbol());
+        }
+
+        Player p = GameMap.getInstance().getThePlayer();
+        matrix[p.getCoordinates().getX1()][p.getCoordinates().getX2()] = String.valueOf(p.getCharacterSymbol());
+
+//        System.err.println(matrix.length + " " + matrix[0].length);
         return matrix;
     }
 }

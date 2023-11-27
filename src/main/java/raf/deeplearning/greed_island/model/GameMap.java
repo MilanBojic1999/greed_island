@@ -177,7 +177,7 @@ public class GameMap implements Runnable{
         while (running) {
             try {
                 makeARound();
-                Thread.sleep(5*1000);
+                Thread.sleep(5*100);
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
