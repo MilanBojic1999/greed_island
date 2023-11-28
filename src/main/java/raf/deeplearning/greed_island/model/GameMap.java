@@ -255,7 +255,7 @@ public class GameMap implements Runnable{
     }
 
     public Player getThePlayer() {
-        System.out.println("Getting the player>>>> "+thePlayer+ " <<<< in world  "+this.hashCode());
+//        System.out.println("Getting the player>>>> "+thePlayer+ " <<<< in world  "+this.hashCode());
         return thePlayer;
     }
 

@@ -42,7 +42,6 @@ public class Player implements ICharacter{
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
-        System.out.println("Player is interacting with the world" + this);
         while (this.bufferedActions.isEmpty()) {
             try {
                 Thread.sleep(50);
@@ -51,7 +50,6 @@ public class Player implements ICharacter{
                 return;
             }
         }
-        System.out.println("Player is interacting with the world 2" + this);
 
         PlayerActions action = this.bufferedActions.poll();
         System.out.println(action);
@@ -72,9 +70,7 @@ public class Player implements ICharacter{
             return;
         }
 
-        System.out.println("Player is on space:  "+this.getCurrentSpace().getClass().getSimpleName());
-        if (this.getCurrentSpace() instanceof Gate ) {
-            Gate gate = (Gate) this.getCurrentSpace();
+        if (this.getCurrentSpace() instanceof Gate gate) {
             if(gate.getPriceOfEntrance() <= this.currentAmountOfGold)
                 GameMap.getInstance().endGame();
             else {
@@ -85,7 +81,6 @@ public class Player implements ICharacter{
 
         ILoot loot = this.getCurrentSpace().loot();
         if(loot != null) {
-            System.out.println("Player is looting:  "+loot.getClass().getSimpleName());
             try {
                 addItems(loot.getClass().getSimpleName(),1);
             } catch (Exception e) {

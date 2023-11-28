@@ -46,10 +46,10 @@ public class CharacterAdapter extends TypeAdapter<ICharacter> {
                     character = new Barbarian(x,y);
                 case "Player" -> {
                     character = new Player(x, y);
-                    System.err.println("Player newwwww "+character);
-                    Thread.dumpStack();
-                    System.err.println("+++++++++++++++++++++++++++++++++++++++++++");
-                    System.err.flush();
+//                    System.err.println("Player newwwww "+character);
+//                    Thread.dumpStack();
+//                    System.err.println("+++++++++++++++++++++++++++++++++++++++++++");
+//                    System.err.flush();
 
                 }
             }
