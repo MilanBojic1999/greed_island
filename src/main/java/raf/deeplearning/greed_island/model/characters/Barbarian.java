@@ -17,14 +17,29 @@ public class Barbarian implements INonPlayableCharacter{
 
     private int x,y;
     private ASpace currentSpace;
+    private transient int waitPeriod;
+
+    private static int MaxWaitPeriod = 2;
+
+
 
     public Barbarian(int x, int y) {
         this.x = x;
         this.y = y;
+        this.waitPeriod = MaxWaitPeriod;
     }
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
+
+        if(waitPeriod<MaxWaitPeriod) {
+            ++waitPeriod;
+            return;
+        }
+
+        this.waitPeriod = 0;
+
+
         System.out.println(Arrays.deepToString(view));
         if(view[0][0].getOccupyingCharacter() instanceof Player) {
             GameMap.getInstance().moveCharacter(this,x,y-1);

@@ -22,16 +22,26 @@ public class Merchant implements INonPlayableCharacter{
 
     private int fullAmountOfGold;
     private transient int currentAmountOfGold;
+    private transient int waitPeriod;
+
+    private static int MaxWaitPeriod = 2;
 
     public Merchant(int x, int y, int fullAmountOfGold) {
         this.x = x;
         this.y = y;
         this.fullAmountOfGold = fullAmountOfGold;
         this.currentAmountOfGold = fullAmountOfGold;
+        this.waitPeriod = MaxWaitPeriod;
     }
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
+        if(waitPeriod < fullAmountOfGold) {
+            ++waitPeriod;
+            return;
+        }
+
+        waitPeriod = 0;
         currentAmountOfGold = fullAmountOfGold;
     }
 
@@ -75,11 +85,12 @@ public class Merchant implements INonPlayableCharacter{
 
         System.out.println("Merchant bought: " + merchantInventory + "\n With value: " + (fullAmountOfGold-tmpGoldOfMerchant));
 
+        int tmpGold = player.getCurrentAmountOfGold();
+        tmpGold += fullAmountOfGold-tmpGoldOfMerchant;
+
         fullAmountOfGold = tmpGoldOfMerchant;
         player.setBagOfLoot(playerInventory);
 
-        int tmpGold = player.getCurrentAmountOfGold();
-        tmpGold += fullAmountOfGold-tmpGoldOfMerchant;
         player.setCurrentAmountOfGold(tmpGold);
     }
 
