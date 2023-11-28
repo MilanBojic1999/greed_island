@@ -190,11 +190,11 @@ public class GameMap implements Runnable{
 
     public void makeARound() throws Exception {
         for(ICharacter ch:characters) {
-            System.out.println(ch+" is making a move in world  "+this.hashCode());
+//            System.out.println(ch+" is making a move in world  "+this.hashCode());
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
         thePlayer.interactWithWorld(this.lookupForCharacter(thePlayer));
-        System.out.println("TICK");
+//        System.out.println("TICK");
     }
 
     @Override
