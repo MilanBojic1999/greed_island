@@ -1,14 +1,11 @@
 package raf.deeplearning.greed_island.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.characters.ICharacter;
 import raf.deeplearning.greed_island.model.characters.Player;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
-import raf.deeplearning.greed_island.services.WorldService;
 
 import java.util.Arrays;
 
@@ -52,5 +49,16 @@ public class TestController {
 
 //        System.err.println(matrix.length + " " + matrix[0].length);
         return matrix;
+    }
+
+    @GetMapping("/isover")
+    public boolean checkIfGameOver() {
+        return GameMap.getInstance().isRunning();
+    }
+
+    @PutMapping("/restart")
+    public boolean restartGame(@RequestBody String mapNumber) {
+        String map = "static/map_test_beta_1.json";
+        return true;
     }
 }

@@ -156,11 +156,11 @@ public class GameMap implements Runnable{
     }
 
     public void run() {
-        try {
-            Thread.sleep(10*1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Thread.sleep(10*1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
         for(ICharacter character:this.characters) {
             Pair p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);

@@ -24,8 +24,8 @@ public class WorldService implements ApplicationRunner {
         String path = "/home/milan/IdeaProjects/greed_island/src/main/resources/static/map.txt";
         String json_path = "/home/milan/IdeaProjects/greed_island/src/main/resources/static/map_test.json";
 
-        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_1.txt";
-        json_path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_1.json";
+        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_2.txt";
+        json_path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_2.json";
         try {
             gameMap = GameMapSerializer.fromSimpleMap(path);
             System.out.println("GAME MAP: "+ Arrays.deepToString(gameMap.getSpaces()));
@@ -48,6 +48,10 @@ public class WorldService implements ApplicationRunner {
         runGame();
     }
 
+
+    public void loadGameMap(String path) {
+
+    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
