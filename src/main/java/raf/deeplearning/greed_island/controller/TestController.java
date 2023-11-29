@@ -6,16 +6,21 @@ import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.characters.ICharacter;
 import raf.deeplearning.greed_island.model.characters.Player;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
+import raf.deeplearning.greed_island.services.WorldService;
 
+import java.io.File;
 import java.util.Arrays;
 
 @RestController
 @CrossOrigin
 public class TestController {
 
+    private WorldService worldService;
+
     @Autowired
-    public TestController() {
+    public TestController(WorldService worldService) {
         System.out.println("TEST CONTROLLER");
+        this.worldService = worldService;
     }
 
     @GetMapping("/")
@@ -53,12 +58,19 @@ public class TestController {
 
     @GetMapping("/isover")
     public boolean checkIfGameOver() {
-        return GameMap.getInstance().isRunning();
+        return !GameMap.getInstance().isRunning();
     }
 
     @PutMapping("/restart")
-    public boolean restartGame(@RequestBody String mapNumber) {
-        String map = "static/map_test_beta_1.json";
+    public boolean restartGame() {
+        String map = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_1.json";
+
+        try {
+            worldService.loadGameMap(map);
+            worldService.rerunGame();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return true;
     }
 }

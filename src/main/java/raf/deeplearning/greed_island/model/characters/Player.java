@@ -52,6 +52,10 @@ public class Player implements ICharacter{
         }
 
         PlayerActions action = this.bufferedActions.poll();
+        if(action == null) {
+            System.err.println("Action is null");
+            return;
+        }
         System.out.println(action);
         switch (action) {
             case UP -> GameMap.getInstance().movePlayer(this,x-1,y);

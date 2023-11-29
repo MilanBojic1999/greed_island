@@ -245,9 +245,10 @@ public class GameMap implements Runnable{
     }
 
     public static void tryToSetCurrentMap(GameMap gameMap) {
-        if(currentGameMap == null)
-            currentGameMap = gameMap;
-        else System.err.println("Map already exists:"+ currentGameMap);
+        currentGameMap = gameMap;
+//        if(currentGameMap == null)
+//            currentGameMap = gameMap;
+//        else System.err.println("Map already exists:"+ currentGameMap);
     }
 
     public void endGame() {
