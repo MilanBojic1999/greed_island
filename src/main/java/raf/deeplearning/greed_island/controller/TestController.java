@@ -62,8 +62,11 @@ public class TestController {
     }
 
     @PutMapping("/restart")
-    public boolean restartGame() {
-        String map = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_1.json";
+    public boolean restartGame(@RequestAttribute(required = false, name = "map_number") Integer mapNumber) {
+        if (mapNumber == null) {
+            mapNumber = 1;
+        }
+        String map = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_"+mapNumber+".json";
 
         try {
             worldService.loadGameMap(map);
