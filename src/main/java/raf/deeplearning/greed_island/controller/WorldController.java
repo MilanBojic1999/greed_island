@@ -58,7 +58,7 @@ public class WorldController {
     }
 
     @PutMapping("/restart")
-    public boolean restartGame(@RequestAttribute(required = false, name = "map_number") Integer mapNumber) {
+    public boolean restartGame(@RequestParam(required = false, name = "map_number") Integer mapNumber) {
         if (mapNumber == null) {
             mapNumber = 1;
         }
