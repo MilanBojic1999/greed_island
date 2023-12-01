@@ -177,7 +177,7 @@ public class GameMap implements Runnable{
         while (running) {
             try {
                 makeARound();
-                Thread.sleep(5*100);
+//                Thread.sleep(5*10);
             } catch (Exception e) {
                 e.printStackTrace();
                 break;
@@ -189,11 +189,12 @@ public class GameMap implements Runnable{
     }
 
     public void makeARound() throws Exception {
+        thePlayer.interactWithWorld(this.lookupForCharacter(thePlayer));
+
         for(ICharacter ch:characters) {
 //            System.out.println(ch+" is making a move in world  "+this.hashCode());
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
-        thePlayer.interactWithWorld(this.lookupForCharacter(thePlayer));
 //        System.out.println("TICK");
     }
 
