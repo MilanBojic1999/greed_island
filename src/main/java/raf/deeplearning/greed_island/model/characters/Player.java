@@ -42,19 +42,23 @@ public class Player implements ICharacter{
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
-        while (this.bufferedActions.isEmpty()) {
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return;
+        PlayerActions action;
+        while(true) {
+            while (this.bufferedActions.isEmpty()) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    return;
+                }
             }
-        }
 
-        PlayerActions action = this.bufferedActions.poll();
-        if(action == null) {
-            System.err.println("Action is null");
-            return;
+            action = this.bufferedActions.poll();
+            if (action == null) {
+                System.err.println("Action is null");
+                continue;
+            }
+            break;
         }
         System.out.println(action);
         switch (action) {
