@@ -17,6 +17,8 @@ public class Woods extends ASpace{
 
     @Override
     public char getSpaceSymbol() {
+        if(this.isLooted())
+            return ':';
         return '+';
     }
 

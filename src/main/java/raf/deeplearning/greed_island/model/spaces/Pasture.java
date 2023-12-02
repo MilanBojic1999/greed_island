@@ -18,6 +18,8 @@ public class Pasture extends ASpace{
 
     @Override
     public char getSpaceSymbol() {
+        if(this.isLooted())
+            return '.';
         return '_';
     }
 

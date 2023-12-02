@@ -27,12 +27,13 @@ public class WorldService implements ApplicationRunner {
 
 //        path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_5.txt";
 //        json_path = "C:\\Users\\mboji\\Desktop\\greed_island\\src\\main\\resources\\static\\map_test_beta_5.json";
-        json_path = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_2.json";
+        json_path = "src"+File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_5.json";
 
         try {
             loadGameMap(json_path);
         } catch (Exception e) {
             e.printStackTrace();
+
         }
 //        try {
 //            gameMap = GameMapSerializer.fromSimpleMap(path);
