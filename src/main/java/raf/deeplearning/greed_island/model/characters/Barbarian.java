@@ -19,7 +19,7 @@ public class Barbarian implements INonPlayableCharacter{
     private ASpace currentSpace;
     private transient int waitPeriod;
 
-    private static int MaxWaitPeriod = 2;
+    private static int MaxWaitPeriod = 1;
 
 
 

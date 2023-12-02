@@ -24,7 +24,7 @@ public class Merchant implements INonPlayableCharacter{
     private transient int currentAmountOfGold;
     private transient int waitPeriod;
 
-    private static int MaxWaitPeriod = 2;
+    private static int MaxWaitPeriod = 3;
 
     public Merchant(int x, int y, int fullAmountOfGold) {
         this.x = x;
