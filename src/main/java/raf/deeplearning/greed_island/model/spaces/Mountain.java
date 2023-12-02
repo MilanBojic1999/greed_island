@@ -31,11 +31,11 @@ public class Mountain extends ASpace{
         this.setLooted(true);
 
         float number = Randomizer.getInstance().randomPresent();
-        if (number > 0.95) {
+        if (number > 0.94) {
             return new Gem();
         } else if(number > 0.90) {
             return new Ore();
-        } else if(number>0.75) {
+        } else if(number>0.70) {
             return new Bones();
         } else {
             return new Stone();

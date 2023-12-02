@@ -31,7 +31,7 @@ public class Pasture extends ASpace{
         this.setLooted(true);
 
         float number = Randomizer.getInstance().randomPresent();
-        if (number > 0.95) {
+        if (number > 0.98) {
             return new Gem();
         } else if (number > 0.55) {
             return new Rice();
