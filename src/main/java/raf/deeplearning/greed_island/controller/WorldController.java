@@ -62,11 +62,7 @@ public class WorldController {
         if (mapNumber == null) {
             mapNumber = 1;
         }
-        String map = "src"+ File.separator+"main"+File.separator+"resources"+File.separator+"static"+ File.separator +"map_test_beta_"+mapNumber+".json";
-        File f = new File(map);
-        if(!f.exists()) {
-            return false;
-        }
+        String map = "static"+ File.separator +"map_test_beta_"+mapNumber+".json";
 
         try {
             worldService.loadGameMap(map);

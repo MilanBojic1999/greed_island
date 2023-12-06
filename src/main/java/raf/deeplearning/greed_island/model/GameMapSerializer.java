@@ -2,6 +2,8 @@ package raf.deeplearning.greed_island.model;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import raf.deeplearning.greed_island.model.adapters.CharacterAdapter;
 import raf.deeplearning.greed_island.model.adapters.LootAdapter;
 import raf.deeplearning.greed_island.model.adapters.SpaceAdapter;
@@ -13,7 +15,10 @@ import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.spaces.factory.*;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GameMapSerializer {
@@ -143,12 +148,24 @@ public class GameMapSerializer {
     }
 
     public static GameMap fromJsonMap(String path) throws IOException {
-        File f = new File(path);
-        if(!f.exists()) {
-            f.createNewFile();
-        }
+//        File f = new File(path);
+//        InputStream stream = GameMapSerializer.class.getResourceAsStream(path);
+        Resource resource = new ClassPathResource(path);
+//        Path newPath = resource.getFile().toPath();
+//        String jsonContent = Files.readString(newPath);
+//        if(!f.exists()) {
+//            System.out.println(System.getProperty("user.dir"));
+//            System.err.println(path + " does not exist");
+//            System.out.println(Arrays.toString(File.listRoots()));
+//            f.createNewFile();
+//        }
 
-        return gson.fromJson(new FileReader(path), GameMap.class);
+//        return gson.fromJson(new FileReader(path), GameMap.class);
+//        System.out.println(newPath);
+//        return gson.fromJson(jsonContent, GameMap.class);
+        try(InputStream inputStream = resource.getInputStream()) {
+            return gson.fromJson(new InputStreamReader(inputStream), GameMap.class);
+        }
     }
 
 }
