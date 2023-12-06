@@ -1,6 +1,5 @@
 package raf.deeplearning.greed_island.model;
 
-import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -20,7 +19,6 @@ import java.util.Random;
 
 @Getter
 @Setter
-@ToString
 public class GameMap implements Runnable{
 
     private int width, height;
