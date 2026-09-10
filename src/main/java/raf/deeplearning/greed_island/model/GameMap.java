@@ -24,9 +24,30 @@ public class GameMap implements Runnable{
     private int width, height;
     private ASpace[][] spaces;
     private List<ICharacter> characters;
+    //        System.out.println("Getting the player>>>> "+thePlayer+ " <<<< in world  "+this.hashCode());
     private Player thePlayer;
 
     private volatile boolean running = true;
+
+    /*
+        Episode bookkeeping for the turn based mode. These fields are transient because a map is
+        deserialized from JSON by Gson, which allocates the object without calling any constructor -
+        the initializers below only run for maps built in code, so never rely on them being set and
+        treat 0/false as the starting value.
+     */
+    private transient int round;
+    private transient volatile boolean done;
+    private transient volatile boolean won;
+    private transient List<String> events;
+    private transient long seed;
+
+    /*
+        Turn based mode: as long as it is off, the background thread of run() drives the rounds.
+        The first call of /game/step switches it on, which makes that thread leave its loop so the
+        rounds are made only by the request thread - see enterTurnBasedMode().
+     */
+    private transient volatile boolean turnBased;
+    private transient volatile boolean loopRunning;
 
     private transient static GameMap currentGameMap;
     private transient final Water outboundWater;
@@ -40,11 +61,15 @@ public class GameMap implements Runnable{
         System.out.println(this.spaces.length + " " + this.spaces[0].length);
 
         this.thePlayer = new Player(height/2-1,width/2-1);
+        System.out.print("Here here");
+        System.out.println("------------");
+
+        Randomizer randomizer = Randomizer.getInstance();
 
         this.characters = new ArrayList<>();
-        this.characters.add(new Barbarian(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
-        this.characters.add(new Villager(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width)));
-        this.characters.add(new Merchant(Randomizer.getInstance().randomInt(height),Randomizer.getInstance().randomInt(width),50));
+        this.characters.add(new Barbarian(randomizer.randomInt(height),randomizer.randomInt(width)));
+        this.characters.add(new Villager(randomizer.randomInt(height),randomizer.randomInt(width)));
+        this.characters.add(new Merchant(randomizer.randomInt(height),randomizer.randomInt(width),50));
 //        this.characters.add(thePlayer);
 
         ISpaceFactory[] all_available_spaces = new ISpaceFactory[]{new ElevationFactory(),new MountainFactory(),new PastureFactory(),new WaterFactory(),new WoodFactory(),};
@@ -75,7 +100,6 @@ public class GameMap implements Runnable{
 
     public static GameMap getInstance() {
         if (currentGameMap == null) {
-            Random r = new Random();
 //            currentGameMap = new GameMap(r.nextInt(20)+5,r.nextInt(20)+5);
             currentGameMap = new GameMap(10,10);
         }
@@ -137,28 +161,32 @@ public class GameMap implements Runnable{
 
     public void movePlayer(Player character,int x,int y){
         if(x<0 || x >= height || y<0 || y >= width) {
+            addEvent("BLOCKED");
             return;
         }
 
-        if(!this.spaces[x][y].isReachable())
+        if(!this.spaces[x][y].isReachable()) {
+            addEvent("BLOCKED");
             return;
+        }
 
         if(this.spaces[x][y].getOccupyingCharacter() != null) {
             ICharacter otherCharacter = this.spaces[x][y].getOccupyingCharacter();
             if(otherCharacter instanceof INonPlayableCharacter)
                 ((INonPlayableCharacter) otherCharacter).interactWithPlayer(character);
+            else
+                addEvent("BLOCKED");
             return;
         }
 
         moveCharacterAfterCheck(character,x,y);
     }
 
-    public void run() {
-//        try {
-//            Thread.sleep(10*1000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
+    /**
+     * Puts every character on the space it is standing on. A map coming from JSON has its
+     * characters deserialized field by field, so until this runs no space knows who occupies it.
+     */
+    public void placeCharacters() {
         for(ICharacter character:this.characters) {
             Pair p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
@@ -170,30 +198,158 @@ public class GameMap implements Runnable{
         this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(thePlayer);
         thePlayer.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
         System.out.println(thePlayer+" is occuping  "+thePlayer.getCurrentSpace());
+    }
 
+    public void run() {
+//        try {
+//            Thread.sleep(10*1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        placeCharacters();
+
+        this.loopRunning = true;
         int numberOfRounds = 0;
-        while (running) {
-            try {
-                makeARound();
-//                Thread.sleep(5*10);
-            } catch (Exception e) {
-                e.printStackTrace();
-                break;
+        try {
+            while (running && !turnBased) {
+                try {
+                    makeARound();
+//                    Thread.sleep(5*10);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    break;
+                }
+                ++numberOfRounds;
             }
-            ++numberOfRounds;
+        } finally {
+            this.loopRunning = false;
         }
 
         System.out.println("Game over in " + numberOfRounds);
     }
 
+    /**
+     * Stops the background thread and hands the rounds over to the caller. Blocks until the loop
+     * has actually left makeARound(), so that a step can never run in parallel with it.
+     */
+    public void enterTurnBasedMode() {
+        if(turnBased)
+            return;
+
+        this.turnBased = true;
+
+        long deadline = System.currentTimeMillis() + 2000;
+        while (loopRunning && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        // the loop may have been switched off before it ever ran, so make sure the map is set up
+        placeCharacters();
+    }
+
+    /**
+     * A round driven by the background thread: it waits for an action to be buffered by
+     * /player/up and friends. Returns without touching the world when the loop is shutting down.
+     */
     public void makeARound() throws Exception {
-        thePlayer.interactWithWorld(this.lookupForCharacter(thePlayer));
+        PlayerActions action = thePlayer.awaitBufferedAction();
+        if(action == null)
+            return;
+
+        makeARound(action);
+    }
+
+    /**
+     * A full environment transition: the player acts, then every NPC acts, then the round is over.
+     * Everything that happened on the way is collected in getEvents().
+     */
+    public void makeARound(PlayerActions action) throws Exception {
+        clearEvents();
+        ++this.round;
+
+        thePlayer.performAction(action);
+
+        if(this.done)
+            return;
 
         for(ICharacter ch:characters) {
 //            System.out.println(ch+" is making a move in world  "+this.hashCode());
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
 //        System.out.println("TICK");
+    }
+
+    public List<String> getEvents() {
+        if(this.events == null)
+            this.events = new ArrayList<>();
+        return this.events;
+    }
+
+    public void addEvent(String event) {
+        getEvents().add(event);
+    }
+
+    public void clearEvents() {
+        getEvents().clear();
+    }
+
+    /**
+     * The map as a matrix of symbols, with the characters drawn over the spaces they stand on.
+     */
+    public String[][] getMatrix() {
+        String[][] matrix = new String[this.spaces.length][this.spaces[0].length];
+
+        for(int i = 0; i < this.spaces.length; i++) {
+            for(int j = 0; j < this.spaces[i].length; j++) {
+                matrix[i][j] = String.valueOf(this.spaces[i][j].getSpaceSymbol());
+            }
+        }
+
+        for(ICharacter c:this.characters) {
+            matrix[c.getCoordinates().getX1()][c.getCoordinates().getX2()] = String.valueOf(c.getCharacterSymbol());
+        }
+
+        matrix[thePlayer.getCoordinates().getX1()][thePlayer.getCoordinates().getX2()]
+                = String.valueOf(thePlayer.getCharacterSymbol());
+
+        return matrix;
+    }
+
+    /**
+     * The amount of gold the player needs to leave the island, or -1 when the map has no gate.
+     */
+    public int getGatePrice() {
+        for(ASpace[] row:this.spaces) {
+            for(ASpace space:row) {
+                if(space instanceof Gate gate)
+                    return gate.getPriceOfEntrance();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * The seed the current episode was started with. A map loaded from JSON never runs a
+     * constructor, so the seed lives in the Randomizer singleton and not in a field of the map.
+     */
+    public long getGameSeed() {
+        return Randomizer.getInstance().getSeed();
+    }
+
+    /**
+     * The gold the merchant can still spend this round, or -1 when the map has no merchant.
+     */
+    public int getMerchantGold() {
+        for(ICharacter character:this.characters) {
+            if(character instanceof Merchant merchant)
+                return merchant.getCurrentAmountOfGold();
+        }
+        return -1;
     }
 
     @Override
@@ -250,13 +406,38 @@ public class GameMap implements Runnable{
 //        else System.err.println("Map already exists:"+ currentGameMap);
     }
 
-    public void endGame() {
-        this.running = false;
+    /**
+     * Starts an episode on a seed nobody asked for. The seed is still drawn and reported, so an
+     * episode that turns out to be interesting can be replayed afterwards.
+     */
+    public void resetEpisode() {
+        resetEpisode(new Random().nextLong());
     }
 
-    public Player getThePlayer() {
-//        System.out.println("Getting the player>>>> "+thePlayer+ " <<<< in world  "+this.hashCode());
-        return thePlayer;
+    /**
+     * Puts the episode counters back to the start of a game and reseeds the randomness of the
+     * whole world, so that the same seed plays out the same way. A map loaded from JSON comes
+     * with the counters already at zero, this is here for the maps that are restarted in place.
+     */
+    public void resetEpisode(long seed) {
+        this.seed = seed;
+        Randomizer.getInstance().reseed(seed);
+        this.round = 0;
+        this.done = false;
+        this.won = false;
+        this.turnBased = false;
+        this.running = true;
+        clearEvents();
+    }
+
+    public void endGame() {
+        endGame(false);
+    }
+
+    public void endGame(boolean won) {
+        this.won = won;
+        this.done = true;
+        this.running = false;
     }
 
 }

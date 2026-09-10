@@ -98,6 +98,8 @@ public class Barbarian implements INonPlayableCharacter{
         System.out.println("Barbarian took " + takeCount + " " + items[itemInd] + " from you!");
         try {
             player.removeItems(items[itemInd],takeCount);
+            if(takeCount > 0)
+                GameMap.getInstance().addEvent("ROBBED " + takeCount + " " + items[itemInd]);
         } catch (Exception e) {
             e.printStackTrace();
         }

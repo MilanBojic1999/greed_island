@@ -32,7 +32,7 @@ public class WorldService implements ApplicationRunner {
         json_path = "static"+ File.separator +"map_test_beta_5.json";
 
         try {
-            loadGameMap(json_path);
+            loadGameMap(json_path, null);
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -60,7 +60,7 @@ public class WorldService implements ApplicationRunner {
     }
 
 
-    public void loadGameMap(String path) throws Exception{
+    public void loadGameMap(String path, Long seed) throws Exception{
         if(path.endsWith(".txt")) {
             gameMap = GameMapSerializer.fromSimpleMap(path);
             System.out.println("GAME MAP: "+ Arrays.deepToString(gameMap.getSpaces()));
@@ -73,6 +73,11 @@ public class WorldService implements ApplicationRunner {
         }
 
         GameMap.tryToSetCurrentMap(gameMap);
+        if(seed!=null){
+            GameMap.getInstance().resetEpisode(seed);
+        } else{
+            GameMap.getInstance().resetEpisode();
+        }
         gameMap = GameMap.getInstance();
         System.err.println("GAME MAP: "+gameMap);
         System.out.println("Player: "+gameMap.getThePlayer());
@@ -89,7 +94,6 @@ public class WorldService implements ApplicationRunner {
     }
 
     private void runGame() {
-        GameMap.getInstance().setRunning(true);
         Thread t1 = new Thread(GameMap.getInstance());
         t1.start();
     }
@@ -97,6 +101,7 @@ public class WorldService implements ApplicationRunner {
     public void rerunGame() {
         GameMap.getInstance().setRunning(false);
         GameMap.getInstance().getThePlayer().getBufferedActions().clear();
+        GameMap.getInstance().resetEpisode();
         runGame();
     }
 }

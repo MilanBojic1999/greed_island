@@ -42,24 +42,42 @@ public class Player implements ICharacter{
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
-        PlayerActions action;
-        while(true) {
-            while (this.bufferedActions.isEmpty()) {
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    return;
-                }
+        PlayerActions action = this.bufferedActions.poll();
+        if (action == null) {
+            action = PlayerActions.WAIT;
+        }
+        performAction(action);
+    }
+
+    /**
+     * Waits for an action to be buffered by the /player endpoints. Returns null when the game is
+     * over or the round loop was handed over to the turn based mode, so the caller can stop.
+     */
+    public PlayerActions awaitBufferedAction() {
+        while (true) {
+            PlayerActions action = this.bufferedActions.poll();
+            if (action != null) {
+                return action;
             }
 
-            action = this.bufferedActions.poll();
-            if (action == null) {
-                System.err.println("Action is null");
-                continue;
+            GameMap map = GameMap.getInstance();
+            if (!map.isRunning() || map.isTurnBased()) {
+                return null;
             }
-            break;
+
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
         }
+    }
+
+    /**
+     * The player half of a round: move, then resolve whatever is on the space we ended up on.
+     */
+    public void performAction(PlayerActions action) {
         System.out.println(action);
         switch (action) {
             case UP -> GameMap.getInstance().movePlayer(this,x-1,y);
@@ -67,11 +85,6 @@ public class Player implements ICharacter{
             case LEFT -> GameMap.getInstance().movePlayer(this,x,y-1);
             case RIGHT -> GameMap.getInstance().movePlayer(this,x,y+1);
             case WAIT -> {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
         }
         if (this.getCurrentSpace() == null) {
@@ -79,10 +92,13 @@ public class Player implements ICharacter{
         }
 
         if (this.getCurrentSpace() instanceof Gate gate) {
-            if(gate.getPriceOfEntrance() <= this.currentAmountOfGold)
-                GameMap.getInstance().endGame();
+            if(gate.getPriceOfEntrance() <= this.currentAmountOfGold) {
+                GameMap.getInstance().addEvent("GATE_OPENED");
+                GameMap.getInstance().endGame(true);
+            }
             else {
                 System.out.println("Player doesn't have enough gold to enter the gate");
+                GameMap.getInstance().addEvent("GATE_REFUSED " + gate.getPriceOfEntrance());
             }
             return;
         }
@@ -91,6 +107,7 @@ public class Player implements ICharacter{
         if(loot != null) {
             try {
                 addItems(loot.getClass().getSimpleName(),1);
+                GameMap.getInstance().addEvent("LOOTED " + loot.getClass().getSimpleName());
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model.characters;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.loot.ILoot;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
@@ -77,6 +78,10 @@ public class Merchant implements INonPlayableCharacter{
                 playerInventory.put(lootName,numberOfAnItem-actualNumberOfAnItemToBuy);
 
                 merchantInventory.put(lootName,actualNumberOfAnItemToBuy);
+
+                if(actualNumberOfAnItemToBuy > 0)
+                    GameMap.getInstance().addEvent("SOLD " + actualNumberOfAnItemToBuy + " " + lootName
+                            + " " + actualNumberOfAnItemToBuy*valueOfAnItem);
 
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                     InstantiationException | IllegalAccessException e) {

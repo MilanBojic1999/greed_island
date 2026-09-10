@@ -6,7 +6,7 @@ public class Randomizer {
 
     private static Randomizer instance;
     private final Random random;
-
+    private long seed;
 
     private Randomizer() {
         this.random = new Random();
@@ -16,6 +16,15 @@ public class Randomizer {
         if(instance == null)
             instance = new Randomizer();
         return instance;
+    }
+
+    public void reseed(long seed) {
+        this.seed = seed;
+        this.random.setSeed(seed);
+    }
+
+    public long getSeed() {
+        return this.seed;
     }
 
     public float randomPresent() {

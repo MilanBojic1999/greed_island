@@ -90,6 +90,7 @@ public class Villager implements INonPlayableCharacter{
 
         try {
             player.addItems(loot.toString(),1);
+            GameMap.getInstance().addEvent("GIFTED " + loot);
         } catch (Exception e) {
             e.printStackTrace();
         }
