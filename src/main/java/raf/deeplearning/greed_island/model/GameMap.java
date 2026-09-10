@@ -17,10 +17,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiFunction;
 
 @Getter
 @Setter
 public class GameMap implements Runnable{
+
+    /*
+        What a map that is generated rather than read from a file is worth playing with. The gate
+        price is the one the documentation names; it used to be 105 here, so a generated map was
+        quietly twice as hard as every level the students actually get.
+     */
+    private static final int GENERATED_GATE_PRICE = 50;
+    private static final int GENERATED_MERCHANT_BUDGET = 50;
+
+    /** How many times a spawn is drawn at random before the map is simply scanned for a spot. */
+    private static final int FREE_SPACE_DRAWS = 100;
 
     private int width, height;
     private ASpace[][] spaces;
@@ -58,8 +70,14 @@ public class GameMap implements Runnable{
     private transient volatile boolean turnBased;
     private transient volatile boolean loopRunning;
 
-    private transient static GameMap currentGameMap;
-    private transient final Water outboundWater;
+    private transient Water outboundWater;
+
+    /*
+        The randomness of this world. One per map and not one per process: that is what makes a
+        seed mean something while several sessions are playing at the same time. Transient, because
+        a map read from JSON is allocated without a constructor - randomizer() is the safe way in.
+     */
+    private transient Randomizer randomizer;
 
     /**
      * Builds a map on a seed nobody asked for: one is drawn and set anyway, so that even a map
@@ -75,7 +93,7 @@ public class GameMap implements Runnable{
      */
     public GameMap(int width, int height, long seed) {
         this.seed = seed;
-        Randomizer.getInstance().reseed(seed);
+        this.randomizer = new Randomizer(seed);
 
         this.width = width;
         this.height = height;
@@ -84,23 +102,9 @@ public class GameMap implements Runnable{
         System.out.println(width + " " + height);
         System.out.println(this.spaces.length + " " + this.spaces[0].length);
 
-        this.thePlayer = new Player(height/2-1,width/2-1);
-        System.out.print("Here here");
-        System.out.println("------------");
-
-        Randomizer randomizer = Randomizer.getInstance();
-
-        this.characters = new ArrayList<>();
-        this.characters.add(new Barbarian(randomizer.randomInt(height),randomizer.randomInt(width)));
-        this.characters.add(new Villager(randomizer.randomInt(height),randomizer.randomInt(width)));
-        this.characters.add(new Merchant(randomizer.randomInt(height),randomizer.randomInt(width),50));
-//        this.characters.add(thePlayer);
-
         ISpaceFactory[] all_available_spaces = new ISpaceFactory[]{new ElevationFactory(),new MountainFactory(),new PastureFactory(),new WaterFactory(),new WoodFactory(),};
-        Random r = new Random();
         for(int i=0;i<height;i++) {
             for(int j=0;j<width;j++) {
-//                this.spaces[i][j] = all_available_spaces[r.nextInt(5)].crateSpace(i,j,1);
                 if (i == 0 || j == 0 || i == height-1 || j == width-1)
                     this.spaces[i][j] = this.outboundWater;
                 else
@@ -108,34 +112,91 @@ public class GameMap implements Runnable{
             }
         }
 
-        this.spaces[height/2][width/2] = new Gate(height/2,width/2,1, 105);
+        this.spaces[height/2][width/2] = new Gate(height/2,width/2,1, GENERATED_GATE_PRICE);
 
-        for(ICharacter character : characters) {
-            Pair p = character.getCoordinates();
-            this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
-            character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
-        }
-
+        this.thePlayer = new Player(height/2-1,width/2-1);
         Pair p = thePlayer.getCoordinates();
         this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(thePlayer);
         thePlayer.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
 
+        /*
+            The NPCs go onto the map after it exists and only onto spaces that can be walked on:
+            drawing their coordinates before the terrain is there is how a merchant ends up in the
+            water, unreachable for the whole episode and with it the gold the gate needs.
+         */
+        this.characters = new ArrayList<>();
+        addOnFreeSpace(Barbarian::new);
+        addOnFreeSpace(Villager::new);
+        addOnFreeSpace((x,y) -> new Merchant(x,y,GENERATED_MERCHANT_BUDGET));
     }
 
-    public static GameMap getInstance() {
-        if (currentGameMap == null) {
-//            currentGameMap = new GameMap(r.nextInt(20)+5,r.nextInt(20)+5);
-            currentGameMap = new GameMap(10,10);
+    /**
+     * Puts a character on a space that is free, or leaves it out of the world when the map has no
+     * free space left - a character standing in the water would be worse than one that is missing.
+     */
+    private void addOnFreeSpace(BiFunction<Integer,Integer,ICharacter> create) {
+        Pair spot = findFreeSpace();
+        if(spot == null)
+            return;
+
+        ICharacter character = create.apply(spot.getX1(), spot.getX2());
+        this.characters.add(character);
+        this.spaces[spot.getX1()][spot.getX2()].setOccupyingCharacter(character);
+        character.setCurrentSpace(this.spaces[spot.getX1()][spot.getX2()]);
+    }
+
+    /**
+     * A space nobody stands on that can be walked onto and is not the gate, drawn at random so the
+     * seed decides where the NPCs start. Falls back to a scan when the draws keep missing, and
+     * gives back null only when the map really has nowhere left to put anybody.
+     */
+    private Pair findFreeSpace() {
+        for(int attempt = 0; attempt < FREE_SPACE_DRAWS; attempt++) {
+            int x = randomizer.randomInt(height), y = randomizer.randomInt(width);
+            if(isFreeSpace(x,y))
+                return new Pair(x,y);
         }
 
-        return currentGameMap;
+        for(int x = 0; x < height; x++)
+            for(int y = 0; y < width; y++)
+                if(isFreeSpace(x,y))
+                    return new Pair(x,y);
+
+        return null;
+    }
+
+    private boolean isFreeSpace(int x, int y) {
+        ASpace space = this.spaces[x][y];
+        return space.isReachable() && space.getOccupyingCharacter() == null && !(space instanceof Gate);
+    }
+
+    /**
+     * The randomness of this world, created on demand for the maps that come from JSON. A map that
+     * has not been given a seed yet draws from the seed it carries, which is 0 until an episode is
+     * started - resetEpisode() is what puts a real seed in.
+     */
+    public Randomizer randomizer() {
+        if(this.randomizer == null)
+            this.randomizer = new Randomizer(this.seed);
+        return this.randomizer;
     }
 
 
+    /**
+     * The 3x3 crop of the world around a character, the way every NPC sees it.
+     */
     public ASpace[][] lookupForCharacter(ICharacter character) throws Exception{
-        int subMatrixSize = 3;
+        return lookupForCharacter(character, 1);
+    }
 
-        int x = 0,y = 0;
+    /**
+     * The (2*radius+1) x (2*radius+1) crop of the world centered on a character. Cells that fall
+     * outside the island are water, so a view has the same shape wherever it is taken - which is
+     * what makes it usable as the input of a network with fixed dimensions.
+     */
+    public ASpace[][] lookupForCharacter(ICharacter character, int radius) throws Exception{
+        if(radius < 0)
+            throw new IllegalArgumentException("Radius must not be negative, got " + radius);
 
         if(!this.characters.contains(character) && !character.equals(this.thePlayer)) {
             throw new UnknownCharacter(character);
@@ -143,23 +204,33 @@ public class GameMap implements Runnable{
 
         Pair p = character.getCoordinates();
 
-        x = p.getX1();
-        y = p.getX2();
+        int x = p.getX1(), y = p.getX2();
+        int subMatrixSize = 2*radius + 1;
 
         ASpace[][] subMatrix = new ASpace[subMatrixSize][subMatrixSize];
 
-        for (int i = x-1; i < x+2; i++) {
-            for (int j = y-1; j < y+2; j++) {
+        for (int i = x-radius; i <= x+radius; i++) {
+            for (int j = y-radius; j <= y+radius; j++) {
                 if(i<0 || i >= height || j<0 || j >= width)
-                    subMatrix[i-x+1][j-y+1] = this.outboundWater;
+                    subMatrix[i-x+radius][j-y+radius] = outboundWater();
                 else {
                     ASpace space = this.spaces[i][j];
-                    subMatrix[i - x + 1][j - y + 1] = space;
+                    subMatrix[i - x + radius][j - y + radius] = space;
                 }
             }
         }
 
         return subMatrix;
+    }
+
+    /**
+     * The water every cell outside the island is made of. Created on demand, because a map read
+     * from JSON is allocated by Gson without running a constructor and starts out without it.
+     */
+    private Water outboundWater() {
+        if(this.outboundWater == null)
+            this.outboundWater = new Water(-1,-1,-1);
+        return this.outboundWater;
     }
 
     private void moveCharacterAfterCheck(ICharacter character,int x,int y) {
@@ -173,14 +244,21 @@ public class GameMap implements Runnable{
         character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
     }
 
-    public void moveCharacter(ICharacter character,int x,int y){
+    /**
+     * Walks a character one space, if that space can be walked onto at all.
+     *
+     * @return true when the character actually moved, false when the space is off the island, not
+     *         reachable or already taken - which is what lets a chase try another way around.
+     */
+    public boolean moveCharacter(ICharacter character,int x,int y){
         if(x<0 || x >= height || y<0 || y >= width) {
-            return;
+            return false;
         }
         if(!this.spaces[x][y].isReachable() || this.spaces[x][y].getOccupyingCharacter() != null)
-            return;
+            return false;
 
         moveCharacterAfterCheck(character,x,y);
+        return true;
     }
 
     public void movePlayer(Player character,int x,int y){
@@ -197,7 +275,7 @@ public class GameMap implements Runnable{
         if(this.spaces[x][y].getOccupyingCharacter() != null) {
             ICharacter otherCharacter = this.spaces[x][y].getOccupyingCharacter();
             if(otherCharacter instanceof INonPlayableCharacter)
-                ((INonPlayableCharacter) otherCharacter).interactWithPlayer(character);
+                ((INonPlayableCharacter) otherCharacter).interactWithPlayer(this, character);
             else
                 addEvent("BLOCKED");
             return;
@@ -281,7 +359,7 @@ public class GameMap implements Runnable{
      * /player/up and friends. Returns without touching the world when the loop is shutting down.
      */
     public void makeARound() throws Exception {
-        PlayerActions action = thePlayer.awaitBufferedAction();
+        PlayerActions action = thePlayer.awaitBufferedAction(this);
         if(action == null)
             return;
 
@@ -296,14 +374,14 @@ public class GameMap implements Runnable{
         clearEvents();
         ++this.round;
 
-        thePlayer.performAction(action);
+        thePlayer.performAction(this, action);
 
         if(this.done)
             return;
 
         for(ICharacter ch:characters) {
 //            System.out.println(ch+" is making a move in world  "+this.hashCode());
-            ch.interactWithWorld(this.lookupForCharacter(ch));
+            ch.interactWithWorld(this, this.lookupForCharacter(ch));
         }
 //        System.out.println("TICK");
 
@@ -349,6 +427,39 @@ public class GameMap implements Runnable{
                 = String.valueOf(thePlayer.getCharacterSymbol());
 
         return matrix;
+    }
+
+    /**
+     * What the player can see from where it stands: a (2*radius+1) square of symbols centered on
+     * it, with water wherever the square hangs over the edge of the island. A radius of 0 is the
+     * single cell the player is on.
+     * <p>
+     * It is a crop of getMatrix() and not of the spaces, so the local view and the full one agree
+     * cell by cell and an agent can be moved from one to the other without relearning the symbols.
+     */
+    public String[][] getViewMatrix(int radius) {
+        if(radius < 0)
+            throw new IllegalArgumentException("Radius must not be negative, got " + radius);
+
+        String[][] full = getMatrix();
+        String water = String.valueOf(outboundWater().getSpaceSymbol());
+        int rows = full.length, columns = full[0].length;
+
+        Pair p = thePlayer.getCoordinates();
+        int x = p.getX1(), y = p.getX2();
+
+        int size = 2*radius + 1;
+        String[][] view = new String[size][size];
+
+        for(int i = 0; i < size; i++) {
+            for(int j = 0; j < size; j++) {
+                int row = x - radius + i, column = y - radius + j;
+                view[i][j] = (row < 0 || row >= rows || column < 0 || column >= columns)
+                        ? water : full[row][column];
+            }
+        }
+
+        return view;
     }
 
     /**
@@ -469,11 +580,10 @@ public class GameMap implements Runnable{
     }
 
     /**
-     * The seed the current episode was started with. A map loaded from JSON never runs a
-     * constructor, so the seed lives in the Randomizer singleton and not in a field of the map.
+     * The seed this episode was started with, the one to write into a training log to replay it.
      */
     public long getGameSeed() {
-        return Randomizer.getInstance().getSeed();
+        return randomizer().getSeed();
     }
 
     /**
@@ -493,16 +603,6 @@ public class GameMap implements Runnable{
                 "spaces=" + spaces +
                 ", characters=" + characters +
                 '}';
-    }
-
-    public static GameMap createMap(int width, int height) {
-        if(currentGameMap !=null) {
-            System.err.println("Map already exists:"+ currentGameMap);
-            return currentGameMap;
-        }
-
-        currentGameMap = new GameMap(width,height);
-        return currentGameMap;
     }
 
     public String getMapString() {
@@ -534,13 +634,6 @@ public class GameMap implements Runnable{
         }
     }
 
-    public static void tryToSetCurrentMap(GameMap gameMap) {
-        currentGameMap = gameMap;
-//        if(currentGameMap == null)
-//            currentGameMap = gameMap;
-//        else System.err.println("Map already exists:"+ currentGameMap);
-    }
-
     /**
      * Starts an episode on a seed nobody asked for. The seed is still drawn and reported, so an
      * episode that turns out to be interesting can be replayed afterwards.
@@ -556,7 +649,7 @@ public class GameMap implements Runnable{
      */
     public void resetEpisode(long seed) {
         this.seed = seed;
-        Randomizer.getInstance().reseed(seed);
+        randomizer().reseed(seed);
         this.round = 0;
         this.done = false;
         this.won = false;

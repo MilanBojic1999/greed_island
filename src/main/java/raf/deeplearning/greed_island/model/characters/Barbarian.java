@@ -6,9 +6,7 @@ import lombok.Setter;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
-import raf.deeplearning.greed_island.model.utils.Randomizer;
 
-import java.util.Arrays;
 import java.util.Map;
 
 @Getter
@@ -30,7 +28,7 @@ public class Barbarian implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithWorld(ASpace[][] view) {
+    public void interactWithWorld(GameMap world, ASpace[][] view) {
 
         if(waitPeriod<MaxWaitPeriod) {
             ++waitPeriod;
@@ -39,33 +37,7 @@ public class Barbarian implements INonPlayableCharacter{
 
         this.waitPeriod = 0;
 
-
-        System.out.println(Arrays.deepToString(view));
-        if(view[0][0].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x,y-1);
-        } else if(view[0][1].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[0][2].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x,y+1);
-        } else if(view[1][0].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[1][2].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[2][0].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x,y-1);
-        } else if(view[2][1].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[2][2].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x,y+1);
-        } else {
-            int move = Randomizer.getInstance().randomMove();
-            switch (move) {
-                case 0 -> GameMap.getInstance().moveCharacter(this,x-1,y);
-                case 1 -> GameMap.getInstance().moveCharacter(this,x+1,y);
-                case 2 -> GameMap.getInstance().moveCharacter(this,x,y-1);
-                case 3 -> GameMap.getInstance().moveCharacter(this,x,y+1);
-            }
-        }
+        chaseOrWander(world, view);
     }
 
     @Override
@@ -80,7 +52,7 @@ public class Barbarian implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithPlayer(Player player) {
+    public void interactWithPlayer(GameMap world, Player player) {
         System.out.println("Barbarian is taking your loot!");
         Map<String,Integer> bag = player.getBagOfLoot();
         System.out.println(bag);
@@ -88,18 +60,18 @@ public class Barbarian implements INonPlayableCharacter{
             return;
         String[] items = bag.keySet().toArray(String[]::new);
 
-        int itemInd = Randomizer.getInstance().randomInt(items.length);
+        int itemInd = world.randomizer().randomInt(items.length);
 
         int itemCount = bag.get(items[itemInd]);
         if(itemCount==0)
             return;
 
-        int takeCount = Randomizer.getInstance().randomInt(itemCount);
+        int takeCount = world.randomizer().randomInt(itemCount);
         System.out.println("Barbarian took " + takeCount + " " + items[itemInd] + " from you!");
         try {
             player.removeItems(items[itemInd],takeCount);
             if(takeCount > 0)
-                GameMap.getInstance().addEvent("ROBBED " + takeCount + " " + items[itemInd]);
+                world.addEvent("ROBBED " + takeCount + " " + items[itemInd]);
         } catch (Exception e) {
             e.printStackTrace();
         }

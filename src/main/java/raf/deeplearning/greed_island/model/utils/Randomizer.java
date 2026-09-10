@@ -2,20 +2,22 @@ package raf.deeplearning.greed_island.model.utils;
 
 import java.util.Random;
 
+/**
+ * The randomness of one world: loot draws, the wandering of the NPCs and the presents of the
+ * villager all come from here.
+ * <p>
+ * There is one per GameMap and not one per process, which is what makes seeding survive parallel
+ * play: eight sessions training at the same time each draw from their own seed, so an episode plays
+ * out the same way no matter what the other seven are doing. Reach it through GameMap.randomizer().
+ */
 public class Randomizer {
 
-    private static Randomizer instance;
     private final Random random;
     private long seed;
 
-    private Randomizer() {
-        this.random = new Random();
-    }
-
-    public static Randomizer getInstance() {
-        if(instance == null)
-            instance = new Randomizer();
-        return instance;
+    public Randomizer(long seed) {
+        this.seed = seed;
+        this.random = new Random(seed);
     }
 
     public void reseed(long seed) {

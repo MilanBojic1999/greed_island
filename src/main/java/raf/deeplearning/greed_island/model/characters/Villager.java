@@ -7,7 +7,6 @@ import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.loot.*;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
-import raf.deeplearning.greed_island.model.utils.Randomizer;
 
 @Getter
 @Setter
@@ -28,7 +27,7 @@ public class Villager implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithWorld(ASpace[][] view) {
+    public void interactWithWorld(GameMap world, ASpace[][] view) {
         if(waitPeriod<MaxWaitPeriod) {
             ++waitPeriod;
             return;
@@ -36,32 +35,7 @@ public class Villager implements INonPlayableCharacter{
 
         this.waitPeriod = 0;
 
-        if(view[0][0].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x-1,y);
-        } else if(view[0][1].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[0][2].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x+1,y);
-        } else if(view[1][0].getOccupyingCharacter() instanceof Player) {
-            System.out.println("Villager: Hello there, I am a villager. I can give you a potion if you give me a coin.");
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[1][2].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[2][0].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x-1,y);
-        } else if(view[2][1].getOccupyingCharacter() instanceof Player) {
-            interactWithPlayer(GameMap.getInstance().getThePlayer());
-        } else if(view[2][2].getOccupyingCharacter() instanceof Player) {
-            GameMap.getInstance().moveCharacter(this,x+1,y);
-        } else {
-            int move = Randomizer.getInstance().randomMove();
-            switch (move) {
-                case 0 -> GameMap.getInstance().moveCharacter(this,x-1,y);
-                case 1 -> GameMap.getInstance().moveCharacter(this,x+1,y);
-                case 2 -> GameMap.getInstance().moveCharacter(this,x,y-1);
-                case 3 -> GameMap.getInstance().moveCharacter(this,x,y+1);
-            }
-        }
+        chaseOrWander(world, view);
     }
 
     @Override
@@ -76,9 +50,9 @@ public class Villager implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithPlayer(Player player) {
+    public void interactWithPlayer(GameMap world, Player player) {
         System.out.println("Villager: Hello there, I have a present for you!");
-        float number = Randomizer.getInstance().randomPresent();
+        float number = world.randomizer().randomPresent();
         ILoot loot;
         if (number > 0.95) {
             loot = new Gem();
@@ -90,7 +64,7 @@ public class Villager implements INonPlayableCharacter{
 
         try {
             player.addItems(loot.toString(),1);
-            GameMap.getInstance().addEvent("GIFTED " + loot);
+            world.addEvent("GIFTED " + loot);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -9,10 +9,11 @@ import raf.deeplearning.greed_island.model.loot.ILoot;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
 import raf.deeplearning.greed_island.model.utils.Pair;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 @Getter
 @Setter
@@ -42,7 +43,7 @@ public class Merchant implements INonPlayableCharacter{
     }
 
     @Override
-    public void interactWithWorld(ASpace[][] view) {
+    public void interactWithWorld(GameMap world, ASpace[][] view) {
         if(++roundsSinceRefill < Math.max(1, refillRounds))
             return;
 
@@ -62,46 +63,70 @@ public class Merchant implements INonPlayableCharacter{
         this.setY(p.getX2());
     }
 
+    /**
+     * Buys what the player is carrying, as far as the gold of this refill goes.
+     * <p>
+     * The order the stacks are offered in is what decides which of them still fit in the budget
+     * once it starts binding, so it must not be the order a hash map happens to hand them out in:
+     * the most valuable item goes first and stacks worth the same are taken by name. That makes
+     * "sell now or carry on looting" a decision with a predictable answer, which is the point of
+     * the budget in the first place.
+     */
     @Override
-    public void interactWithPlayer(Player player) {
+    public void interactWithPlayer(GameMap world, Player player) {
         Map<String, Integer> playerInventory = player.getBagOfLoot();
-        Map<String, Integer> merchantInventory = new HashMap<>();
+        Map<String, Integer> merchantInventory = new TreeMap<>();
+
+        List<String> offered = new ArrayList<>(playerInventory.keySet());
+        Comparator<String> byValue = Comparator.comparingInt(Merchant::goldValueOf);
+        offered.sort(byValue.reversed().thenComparing(Comparator.naturalOrder()));
 
         int tmpGoldOfMerchant = currentAmountOfGold;
 
-        for(String lootName:playerInventory.keySet()) {
+        for(String lootName:offered) {
+            int valueOfAnItem = goldValueOf(lootName);
+            int numberOfAnItem = playerInventory.get(lootName);
+
+            int maxNumberOfAnItemToBuy = tmpGoldOfMerchant/Math.max(1,valueOfAnItem);
+            int actualNumberOfAnItemToBuy = Math.min(maxNumberOfAnItemToBuy,numberOfAnItem);
+            if(actualNumberOfAnItemToBuy <= 0)
+                continue;
+
+            tmpGoldOfMerchant -= actualNumberOfAnItemToBuy*valueOfAnItem;
+
             try {
-                Class<? extends ILoot> loot = Class.forName("raf.deeplearning.greed_island.model.loot."+lootName).asSubclass(ILoot.class);
-
-                int numberOfAnItem = playerInventory.get(lootName);
-                int valueOfAnItem = loot.getConstructor().newInstance().getValueInGold();
-
-                int maxNumberOfAnItemToBut = tmpGoldOfMerchant/Math.max(1,valueOfAnItem);
-                int actualNumberOfAnItemToBuy = Math.min(maxNumberOfAnItemToBut,numberOfAnItem);
-                tmpGoldOfMerchant -= actualNumberOfAnItemToBuy*valueOfAnItem;
-                playerInventory.put(lootName,numberOfAnItem-actualNumberOfAnItemToBuy);
-
-                merchantInventory.put(lootName,actualNumberOfAnItemToBuy);
-
-                if(actualNumberOfAnItemToBuy > 0)
-                    GameMap.getInstance().addEvent("SOLD " + actualNumberOfAnItemToBuy + " " + lootName
-                            + " " + actualNumberOfAnItemToBuy*valueOfAnItem);
-
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
-                    InstantiationException | IllegalAccessException e) {
+                // through the player, so that a stack that is sold out leaves the bag instead of
+                // staying in it as a zero the merchant would keep being offered next time
+                player.removeItems(lootName, actualNumberOfAnItemToBuy);
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+
+            merchantInventory.put(lootName,actualNumberOfAnItemToBuy);
+            world.addEvent("SOLD " + actualNumberOfAnItemToBuy + " " + lootName
+                    + " " + actualNumberOfAnItemToBuy*valueOfAnItem);
         }
 
-        System.out.println("Merchant bought: " + merchantInventory + "\n With value: " + (currentAmountOfGold-tmpGoldOfMerchant));
-
-        int tmpGold = player.getCurrentAmountOfGold();
-        tmpGold += currentAmountOfGold-tmpGoldOfMerchant;
+        int paid = currentAmountOfGold - tmpGoldOfMerchant;
+        System.out.println("Merchant bought: " + merchantInventory + "\n With value: " + paid);
 
         currentAmountOfGold = tmpGoldOfMerchant;
-        player.setBagOfLoot(playerInventory);
+        player.setCurrentAmountOfGold(player.getCurrentAmountOfGold() + paid);
+    }
 
-        player.setCurrentAmountOfGold(tmpGold);
+    /**
+     * What one item of a kind of loot is worth, looked up from the name it is kept under in the
+     * bag. An unknown name is a bug in the map or in the loot package, not something to trade
+     * around, so it is thrown rather than priced at zero.
+     */
+    private static int goldValueOf(String lootName) {
+        try {
+            Class<? extends ILoot> loot = Class.forName("raf.deeplearning.greed_island.model.loot."+lootName)
+                    .asSubclass(ILoot.class);
+            return loot.getConstructor().newInstance().getValueInGold();
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

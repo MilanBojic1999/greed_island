@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.characters.ICharacter;
 import raf.deeplearning.greed_island.model.loot.ILoot;
+import raf.deeplearning.greed_island.model.utils.Randomizer;
 
 @Getter
 @Setter
@@ -40,7 +41,12 @@ public abstract class ASpace {
                 '}';
     }
 
-    public abstract ILoot loot();
+    /**
+     * What the space gives up when it is stepped on, null when there is nothing (left) to take.
+     * The randomness is handed in rather than taken from a singleton, so that two worlds looting
+     * the same kind of field draw from their own seeds.
+     */
+    public abstract ILoot loot(Randomizer randomizer);
     public abstract char getSpaceSymbol();
 
     public void setLooted(boolean looted) {

@@ -2,7 +2,6 @@ package raf.deeplearning.greed_island.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.characters.ICharacter;
 import raf.deeplearning.greed_island.model.characters.Player;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
@@ -26,7 +25,7 @@ public class TestController {
     @GetMapping("/")
     public String getHello() {
         System.out.println("CALL");
-        return GameMap.getInstance().getMapString();
+        return worldService.defaultSession().play(map -> map.getMapString());
     }
 
 //    @GetMapping("/full")

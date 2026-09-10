@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model.spaces;
 import lombok.Getter;
 import lombok.Setter;
 import raf.deeplearning.greed_island.model.loot.ILoot;
+import raf.deeplearning.greed_island.model.utils.Randomizer;
 import raf.deeplearning.greed_island.model.loot.Stone;
 
 
@@ -33,7 +34,7 @@ public class Gate extends ASpace{
     }
 
     @Override
-    public ILoot loot() {
+    public ILoot loot(Randomizer randomizer) {
         if(this.isLooted()) {
             return null;
         }

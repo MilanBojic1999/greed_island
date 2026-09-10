@@ -7,10 +7,8 @@ import org.springframework.web.server.ResponseStatusException;
 import raf.deeplearning.greed_island.Paths;
 import raf.deeplearning.greed_island.dto.RestartResponse;
 import raf.deeplearning.greed_island.model.EpisodeConfig;
-import raf.deeplearning.greed_island.model.GameMap;
+import raf.deeplearning.greed_island.services.GameSession;
 import raf.deeplearning.greed_island.services.WorldService;
-
-import java.io.File;
 
 @RestController
 @CrossOrigin
@@ -26,24 +24,35 @@ public class WorldController {
     }
 
     @GetMapping("/full")
-    public String getFullMap() {
-        return GameMap.getInstance().getMapString();
+    public String getFullMap(@RequestParam(required = false, name = "game_id") String gameId) {
+        return worldService.session(gameId).play(map -> map.getMapString());
     }
 
     @GetMapping("/full/matrix")
-    public String[][] getFullMapMatrix() {
-        return GameMap.getInstance().getMatrix();
+    public String[][] getFullMapMatrix(@RequestParam(required = false, name = "game_id") String gameId) {
+        return worldService.session(gameId).play(map -> map.getMatrix());
     }
 
     @GetMapping("/isover")
-    public boolean checkIfGameOver() {
-        return GameMap.getInstance().isDone();
+    public boolean checkIfGameOver(@RequestParam(required = false, name = "game_id") String gameId) {
+        return worldService.session(gameId).play(map -> map.isDone());
     }
 
     /**
-     * Starts a new episode on one of the levels and answers with everything needed to write it
-     * down: the seed it runs on and the configuration it ended up with.
+     * Starts a new episode and answers with everything needed to write it down: the session it runs
+     * in, the seed it runs on and the configuration it ended up with.
      * <p>
+     * This is the one call that both creates and resets an environment. Without a "game_id" it is
+     * the default session - the one the frontend shows - that starts over, exactly as before. With
+     * one, it is that session: it is created if the server does not know it yet and played over from
+     * the beginning if it does, so a training loop uses the same request for its first episode and
+     * for every reset after it. Sessions named differently are independent and can be stepped at the
+     * same time, which is what running several environments in parallel needs:
+     * <pre>
+     *   PUT /map/restart?map_number=1&amp;seed=100&amp;game_id=env_0
+     *   PUT /map/restart?map_number=1&amp;seed=101&amp;game_id=env_1   (and so on)
+     *   POST /game/env_0/step?action=UP                      (in parallel with env_1)
+     * </pre>
      * Every setting of the level can be overridden here, which is what makes a curriculum possible
      * without touching the map files - the same level with the barbarian switched off, with a
      * cheaper gate or with a shorter round budget is one query parameter away. A parameter that is
@@ -51,6 +60,7 @@ public class WorldController {
      *
      * @param mapNumber            the level, 0 to 5, 1 when not given
      * @param seed                 the seed of the episode, drawn at random when not given
+     * @param gameId               the session to start the episode in, the default one when not given
      * @param gatePrice            the gold needed to open the gate
      * @param merchantBudget       the gold the merchant trades with
      * @param merchantRefillRounds rounds between two refills of that budget
@@ -61,6 +71,7 @@ public class WorldController {
     @PutMapping("/restart")
     public RestartResponse restartGame(@RequestParam(required = false, name = "map_number") Integer mapNumber,
                                @RequestParam(required = false, name = "seed") Long seed,
+                               @RequestParam(required = false, name = "game_id") String gameId,
                                @RequestParam(required = false, name = "gate_price") Integer gatePrice,
                                @RequestParam(required = false, name = "merchant_budget") Integer merchantBudget,
                                @RequestParam(required = false, name = "merchant_refill_rounds") Integer merchantRefillRounds,
@@ -68,7 +79,7 @@ public class WorldController {
                                @RequestParam(required = false, name = "villager_enabled") Boolean villagerEnabled,
                                @RequestParam(required = false, name = "max_rounds") Integer maxRounds) {
         if (mapNumber == null) {
-            mapNumber = 1;
+            mapNumber = WorldService.FALLBACK_MAP_NUMBER;
         }
 
         EpisodeConfig overrides = new EpisodeConfig();
@@ -79,30 +90,36 @@ public class WorldController {
         overrides.setVillagerEnabled(villagerEnabled);
         overrides.setMaxRounds(maxRounds);
 
-        String map = "static"+ File.separator +"map_test_beta_"+mapNumber+".json";
-        System.out.println(map);
         System.out.printf("SEED: %d ~~\n", seed);
         System.out.println("CONFIG OVERRIDES: " + overrides);
+
+        GameSession session;
         try {
-            // loadGameMap seeds the episode and starts the game, calling rerunGame() on top of it
-            // would reseed with another seed and leave a second round loop running on the same map
-            worldService.loadGameMap(map, seed, overrides);
+            session = worldService.restart(gameId, mapNumber, seed, overrides);
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Could not start map " + mapNumber + ": " + e);
         }
 
-        GameMap gameMap = GameMap.getInstance();
-        return new RestartResponse(gameMap.getGameSeed(), mapNumber, gameMap.describeConfig());
+        return new RestartResponse(session.getId(), session.getMap().getGameSeed(), mapNumber,
+                session.getMap().describeConfig());
     }
 
 
+    /**
+     * Plays the default session over again, on a new seed. Kept for the frontend; a training run is
+     * better served by /map/restart, which says which session to reset and on which seed.
+     */
     @PostMapping("/reset")
     public void resetMap() {
         System.out.println("RESET MAP");
-        GameMap.getInstance().setRunning(false);
-        worldService.rerunGame();
-
+        try {
+            worldService.rerunGame();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -24,13 +24,13 @@ public class Mountain extends ASpace{
     }
 
     @Override
-    public ILoot loot() {
+    public ILoot loot(Randomizer randomizer) {
         if(this.isLooted()) {
             return null;
         }
         this.setLooted(true);
 
-        float number = Randomizer.getInstance().randomPresent();
+        float number = randomizer.randomPresent();
         if (number > 0.94) {
             return new Gem();
         } else if(number > 0.90) {
