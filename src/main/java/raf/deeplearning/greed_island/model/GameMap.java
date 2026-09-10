@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import raf.deeplearning.greed_island.dto.EpisodeConfigView;
 import raf.deeplearning.greed_island.model.characters.*;
 import raf.deeplearning.greed_island.model.exception.UnknownCharacter;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
@@ -30,6 +31,13 @@ public class GameMap implements Runnable{
     private volatile boolean running = true;
 
     /*
+        The episode settings of this level, read from the optional "config" object of the map JSON.
+        Not transient, so a map saved back to JSON keeps them. Like everything else that comes from
+        Gson it can be null - getConfig() is the only safe way to reach it.
+     */
+    private EpisodeConfig config;
+
+    /*
         Episode bookkeeping for the turn based mode. These fields are transient because a map is
         deserialized from JSON by Gson, which allocates the object without calling any constructor -
         the initializers below only run for maps built in code, so never rely on them being set and
@@ -40,6 +48,7 @@ public class GameMap implements Runnable{
     private transient volatile boolean won;
     private transient List<String> events;
     private transient long seed;
+    private transient int maxRounds;
 
     /*
         Turn based mode: as long as it is off, the background thread of run() drives the rounds.
@@ -52,7 +61,22 @@ public class GameMap implements Runnable{
     private transient static GameMap currentGameMap;
     private transient final Water outboundWater;
 
+    /**
+     * Builds a map on a seed nobody asked for: one is drawn and set anyway, so that even a map
+     * created out of thin air can be replayed later from the seed the API reports.
+     */
     public GameMap(int width, int height) {
+        this(width,height,new Random().nextLong());
+    }
+
+    /**
+     * Builds a map on a given seed. The seed is set before anything random is drawn, so the NPC
+     * spawns below - and every loot draw and NPC move afterwards - repeat for the same seed.
+     */
+    public GameMap(int width, int height, long seed) {
+        this.seed = seed;
+        Randomizer.getInstance().reseed(seed);
+
         this.width = width;
         this.height = height;
         this.spaces = new ASpace[height][width];
@@ -282,6 +306,13 @@ public class GameMap implements Runnable{
             ch.interactWithWorld(this.lookupForCharacter(ch));
         }
 //        System.out.println("TICK");
+
+        // an episode with a round limit has to end by itself, otherwise an agent that never finds
+        // the gate keeps playing forever and every client has to invent its own timeout
+        if(this.maxRounds > 0 && this.round >= this.maxRounds) {
+            addEvent("OUT_OF_TIME");
+            endGame(false);
+        }
     }
 
     public List<String> getEvents() {
@@ -329,6 +360,110 @@ public class GameMap implements Runnable{
                 if(space instanceof Gate gate)
                     return gate.getPriceOfEntrance();
             }
+        }
+        return -1;
+    }
+
+    /**
+     * The episode settings of this level. Never null: a map that says nothing about them gets an
+     * empty config, which resolves to the values the game had before it was configurable.
+     */
+    public EpisodeConfig getConfig() {
+        if(this.config == null)
+            this.config = new EpisodeConfig();
+        return this.config;
+    }
+
+    /**
+     * Makes the world match its config: takes the switched off NPCs off the map, gives the merchant
+     * the budget and the refill rhythm of this level, sets the price of the gate and remembers the
+     * round limit. Called on every episode start, so it also puts back what the last one spent.
+     */
+    public void applyConfig() {
+        EpisodeConfig episodeConfig = getConfig();
+
+        if(this.characters != null) {
+            List<ICharacter> remaining = new ArrayList<>();
+            for(ICharacter character:this.characters) {
+                if(character instanceof Barbarian && !episodeConfig.isBarbarianEnabled()
+                        || character instanceof Villager && !episodeConfig.isVillagerEnabled()) {
+                    removeFromItsSpace(character);
+                    continue;
+                }
+                remaining.add(character);
+            }
+            this.characters = remaining;
+
+            for(ICharacter character:this.characters) {
+                if(character instanceof Merchant merchant) {
+                    if(episodeConfig.getMerchantBudget() != null)
+                        merchant.setFullAmountOfGold(episodeConfig.getMerchantBudget());
+                    merchant.setCurrentAmountOfGold(merchant.getFullAmountOfGold());
+                    merchant.setRefillRounds(episodeConfig.refillRoundsOrDefault());
+                    merchant.setRoundsSinceRefill(0);
+                }
+            }
+        }
+
+        if(episodeConfig.getGatePrice() != null && this.spaces != null) {
+            for(ASpace[] row:this.spaces) {
+                for(ASpace space:row) {
+                    if(space instanceof Gate gate)
+                        gate.setPriceOfEntrance(episodeConfig.getGatePrice());
+                }
+            }
+        }
+
+        this.maxRounds = episodeConfig.maxRoundsOrUnlimited();
+    }
+
+    /**
+     * Frees the space a character was standing on. A map that is restarted in place has its
+     * characters already placed, so an NPC that the config switches off would otherwise leave a
+     * body behind: a space nobody can walk onto anymore.
+     */
+    private void removeFromItsSpace(ICharacter character) {
+        ASpace space = character.getCurrentSpace();
+        if(space == null) {
+            Pair p = character.getCoordinates();
+            if(this.spaces == null || p.getX1() < 0 || p.getX1() >= this.spaces.length
+                    || p.getX2() < 0 || p.getX2() >= this.spaces[0].length)
+                return;
+            space = this.spaces[p.getX1()][p.getX2()];
+        }
+
+        if(space.getOccupyingCharacter() == character)
+            space.setOccupyingCharacter(null);
+        character.setCurrentSpace(null);
+    }
+
+    /**
+     * The configuration of the running episode as the world actually is, for the API to report.
+     */
+    public EpisodeConfigView describeConfig() {
+        boolean barbarian = false, villager = false;
+        int merchantRefillRounds = getConfig().refillRoundsOrDefault();
+
+        for(ICharacter character:this.characters) {
+            if(character instanceof Barbarian)
+                barbarian = true;
+            else if(character instanceof Villager)
+                villager = true;
+            else if(character instanceof Merchant merchant)
+                merchantRefillRounds = merchant.getRefillRounds();
+        }
+
+        return new EpisodeConfigView(getGatePrice(), getMerchantBudget(), merchantRefillRounds,
+                barbarian, villager, this.maxRounds);
+    }
+
+    /**
+     * The gold the merchant starts every refill with, or -1 when the map has no merchant.
+     */
+    public int getMerchantBudget() {
+        for(ICharacter character:this.characters) {
+            if(character instanceof Merchant merchant)
+                return merchant.getFullAmountOfGold();
         }
         return -1;
     }
@@ -428,6 +563,7 @@ public class GameMap implements Runnable{
         this.turnBased = false;
         this.running = true;
         clearEvents();
+        applyConfig();
     }
 
     public void endGame() {

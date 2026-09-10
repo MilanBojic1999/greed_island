@@ -10,8 +10,13 @@ import raf.deeplearning.greed_island.model.loot.Stone;
 @Setter
 public class Gate extends ASpace{
 
-    private final int priceOfEntrance;
-    
+    /*
+        Not final: a level can set its own price through the "gatePrice" of its config, and the
+        price of a gate that is already on the map is the only thing that has to change for it.
+     */
+    private int priceOfEntrance;
+
+
     public Gate(int x, int y, int z, int priceOfEntrance) {
         super(x,y,z,SpaceType.UNDISCOVERED,true);
         this.priceOfEntrance = priceOfEntrance;

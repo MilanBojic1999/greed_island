@@ -16,6 +16,7 @@ import java.util.Map;
  * @param gatePrice    the gold needed to open the gate, -1 when the map has no gate
  * @param merchantGold the gold the merchant can still spend, -1 when the map has no merchant
  * @param seed         seed of the map
+ * @param maxRounds    the round the episode ends unwon at, 0 when this level has no round limit
  */
 public record StepResponse(
         String[][] matrix,
@@ -27,6 +28,7 @@ public record StepResponse(
         List<String> events,
         int gatePrice,
         int merchantGold,
-        long seed
+        long seed,
+        int maxRounds
 ) {
 }

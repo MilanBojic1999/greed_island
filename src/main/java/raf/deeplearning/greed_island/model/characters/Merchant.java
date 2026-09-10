@@ -3,6 +3,7 @@ package raf.deeplearning.greed_island.model.characters;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import raf.deeplearning.greed_island.model.EpisodeConfig;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.loot.ILoot;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
@@ -23,26 +24,29 @@ public class Merchant implements INonPlayableCharacter{
 
     private int fullAmountOfGold;
     private transient int currentAmountOfGold;
-    private transient int waitPeriod;
 
-    private static int MaxWaitPeriod = 3;
+    /*
+        How often the budget comes back, in rounds, and how many rounds have been played since it
+        last did. It is a field of the merchant and not a constant of the class, because it is one
+        of the difficulty knobs a level sets - see EpisodeConfig.merchantRefillRounds.
+     */
+    private transient int refillRounds = EpisodeConfig.DEFAULT_MERCHANT_REFILL_ROUNDS;
+    private transient int roundsSinceRefill;
 
     public Merchant(int x, int y, int fullAmountOfGold) {
         this.x = x;
         this.y = y;
         this.fullAmountOfGold = fullAmountOfGold;
         this.currentAmountOfGold = fullAmountOfGold;
-        this.waitPeriod = MaxWaitPeriod;
+        this.roundsSinceRefill = 0;
     }
 
     @Override
     public void interactWithWorld(ASpace[][] view) {
-        if(waitPeriod < MaxWaitPeriod) {
-            ++waitPeriod;
+        if(++roundsSinceRefill < Math.max(1, refillRounds))
             return;
-        }
 
-        waitPeriod = 0;
+        roundsSinceRefill = 0;
         currentAmountOfGold = fullAmountOfGold;
         System.out.println(currentAmountOfGold);
     }

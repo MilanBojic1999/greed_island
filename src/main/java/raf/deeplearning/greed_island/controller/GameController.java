@@ -83,7 +83,8 @@ public class GameController {
                 List.copyOf(map.getEvents()),
                 map.getGatePrice(),
                 map.getMerchantGold(),
-                map.getGameSeed()
+                map.getGameSeed(),
+                map.getMaxRounds()
         );
     }
 

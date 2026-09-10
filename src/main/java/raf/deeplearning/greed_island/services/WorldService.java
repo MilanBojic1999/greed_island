@@ -5,6 +5,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import raf.deeplearning.greed_island.model.EpisodeConfig;
 import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.GameMapSerializer;
 
@@ -61,6 +62,15 @@ public class WorldService implements ApplicationRunner {
 
 
     public void loadGameMap(String path, Long seed) throws Exception{
+        loadGameMap(path, seed, null);
+    }
+
+    /**
+     * Starts an episode on the map at the given path. The settings of the level come from the
+     * "config" object of the map itself, with the overrides on top of them - so a request can turn
+     * the barbarian off or cap the number of rounds without the map file knowing about it.
+     */
+    public void loadGameMap(String path, Long seed, EpisodeConfig overrides) throws Exception{
         if(path.endsWith(".txt")) {
             gameMap = GameMapSerializer.fromSimpleMap(path);
             System.out.println("GAME MAP: "+ Arrays.deepToString(gameMap.getSpaces()));
@@ -73,6 +83,10 @@ public class WorldService implements ApplicationRunner {
         }
 
         GameMap.tryToSetCurrentMap(gameMap);
+
+        // the config has to be in place before the episode is reset: resetting is what applies it
+        gameMap.setConfig(EpisodeConfig.merge(gameMap.getConfig(), overrides));
+
         if(seed!=null){
             GameMap.getInstance().resetEpisode(seed);
         } else{
