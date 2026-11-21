@@ -76,7 +76,12 @@ public class GameMapSerializer {
 
     public static GameMap fromSimpleMap(String path) throws Exception {
 
-        BufferedReader bw = new BufferedReader(new FileReader(path));
+        // Read from the classpath when the map is a bundled resource, from disk otherwise.
+        ClassPathResource resource = new ClassPathResource(path);
+        Reader reader = resource.exists()
+                ? new InputStreamReader(resource.getInputStream())
+                : new FileReader(path);
+        BufferedReader bw = new BufferedReader(reader);
         String sizeStr = bw.readLine();
         String[] sz = sizeStr.split(" ");
         int height = Integer.parseInt(sz[0]);

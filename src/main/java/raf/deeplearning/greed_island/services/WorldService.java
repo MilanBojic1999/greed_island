@@ -2,6 +2,7 @@ package raf.deeplearning.greed_island.services;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,6 +11,9 @@ import raf.deeplearning.greed_island.model.GameMap;
 import raf.deeplearning.greed_island.model.GameMapSerializer;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -90,12 +94,27 @@ public class WorldService implements ApplicationRunner {
      * sessions on the same level share nothing at all.
      */
     public GameMap loadMap(int mapNumber) throws Exception {
-        String path = "static" + File.separator + "map_test_beta_" + mapNumber + ".json";
-        System.out.println(path);
+        // Classpath resource names always use '/', whatever the OS separator is.
+        String basePath = "static/map_test_beta_" + mapNumber;
+        String jsonPathStr = basePath + ".json";
+        String txtPathStr = basePath + ".txt";
 
-        GameMap map = GameMapSerializer.fromJsonMap(path);
+        String targetPath;
+        GameMap map;
+        // The levels are classpath resources (inside the jar when it is run as one), not files on disk.
+        if (new ClassPathResource(jsonPathStr).exists()) {
+            targetPath = jsonPathStr;
+            System.out.println("Loading JSON map from: " + jsonPathStr);
+            map = GameMapSerializer.fromJsonMap(targetPath);
+
+        } else {
+            targetPath = txtPathStr;
+            System.out.println("JSON not found. Falling back to TXT at: " + txtPathStr);
+            map = GameMapSerializer.fromSimpleMap(targetPath);
+        }
+
         if (map == null || map.getSpaces() == null || map.getThePlayer() == null)
-            throw new RuntimeException("Map " + mapNumber + " could not be read from " + path);
+            throw new RuntimeException("Map " + mapNumber + " could not be read from " + targetPath);
 
         return map;
     }

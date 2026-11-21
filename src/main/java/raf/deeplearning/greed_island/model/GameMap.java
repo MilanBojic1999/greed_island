@@ -7,7 +7,9 @@ import raf.deeplearning.greed_island.dto.EpisodeConfigView;
 import raf.deeplearning.greed_island.model.characters.*;
 import raf.deeplearning.greed_island.model.exception.UnknownCharacter;
 import raf.deeplearning.greed_island.model.spaces.ASpace;
+import raf.deeplearning.greed_island.model.spaces.Elevation;
 import raf.deeplearning.greed_island.model.spaces.Gate;
+import raf.deeplearning.greed_island.model.spaces.Mountain;
 import raf.deeplearning.greed_island.model.spaces.Water;
 import raf.deeplearning.greed_island.model.spaces.factory.*;
 import raf.deeplearning.greed_island.model.utils.Pair;
@@ -167,7 +169,35 @@ public class GameMap implements Runnable{
 
     private boolean isFreeSpace(int x, int y) {
         ASpace space = this.spaces[x][y];
-        return space.isReachable() && space.getOccupyingCharacter() == null && !(space instanceof Gate);
+        return space.isReachable() && space.getOccupyingCharacter() == null
+                && !(space instanceof Gate) && !(space instanceof Mountain);
+    }
+
+    /**
+     * Whether a character standing on one space may step onto the next, as far as the terrain is
+     * concerned (who is standing there is checked separately).
+     * <p>
+     * The island has two levels: mountains are the high ground, everything else is the low
+     * ground, and elevations are the only spaces that connect the two. So a step between two
+     * mountains, or between two low spaces, only needs the target to be reachable, but a step
+     * onto or off a mountain needs the other end of it to be an elevation. A mountain that
+     * touches no elevation can never be reached, which keeps the mountains that a level uses as
+     * walls exactly that.
+     */
+    public static boolean canStep(ASpace from, ASpace to) {
+        if(!to.isReachable())
+            return false;
+
+        boolean fromMountain = from instanceof Mountain, toMountain = to instanceof Mountain;
+        if(fromMountain == toMountain)
+            return true;
+
+        return (fromMountain ? to : from) instanceof Elevation;
+    }
+
+    private ASpace spaceOf(ICharacter character) {
+        Pair p = character.getCoordinates();
+        return this.spaces[p.getX1()][p.getX2()];
     }
 
     /**
@@ -254,7 +284,7 @@ public class GameMap implements Runnable{
         if(x<0 || x >= height || y<0 || y >= width) {
             return false;
         }
-        if(!this.spaces[x][y].isReachable() || this.spaces[x][y].getOccupyingCharacter() != null)
+        if(!canStep(spaceOf(character), this.spaces[x][y]) || this.spaces[x][y].getOccupyingCharacter() != null)
             return false;
 
         moveCharacterAfterCheck(character,x,y);
@@ -274,10 +304,18 @@ public class GameMap implements Runnable{
 
         if(this.spaces[x][y].getOccupyingCharacter() != null) {
             ICharacter otherCharacter = this.spaces[x][y].getOccupyingCharacter();
-            if(otherCharacter instanceof INonPlayableCharacter)
-                ((INonPlayableCharacter) otherCharacter).interactWithPlayer(this, character);
-            else
-                addEvent("BLOCKED");
+            ((INonPlayableCharacter) otherCharacter).interactWithPlayer(this, character);
+            addEvent("BLOCKED");
+            return;
+        }
+
+        /*
+            After the occupant check on purpose: an NPC interacts with a player next to it
+            whatever the two of them are standing on, so the player bumping into one across the
+            foot of a mountain interacts as well. Only the step itself needs the elevation.
+         */
+        if(!canStep(spaceOf(character), this.spaces[x][y])) {
+            addEvent("BLOCKED");
             return;
         }
 

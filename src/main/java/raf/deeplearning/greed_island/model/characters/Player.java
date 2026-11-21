@@ -184,11 +184,4 @@ public class Player implements ICharacter{
     public void setCurrentSpace(ASpace space) {
         this.currentSpace = space;
     }
-
-    public void addCoins(int coins) {
-        if(this.currentAmountOfGold + coins < 0) {
-            this.currentAmountOfGold = 0;
-        }
-        this.currentAmountOfGold += coins;
-    }
 }

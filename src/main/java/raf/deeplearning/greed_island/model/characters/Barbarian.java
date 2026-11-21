@@ -65,8 +65,8 @@ public class Barbarian implements INonPlayableCharacter{
         int itemCount = bag.get(items[itemInd]);
         if(itemCount==0)
             return;
-
-        int takeCount = world.randomizer().randomInt(itemCount);
+        // Barbarin uzima izmedju 1 i n objekata od igraca
+        int takeCount = world.randomizer().randomInt(itemCount) + 1;
         System.out.println("Barbarian took " + takeCount + " " + items[itemInd] + " from you!");
         try {
             player.removeItems(items[itemInd],takeCount);
