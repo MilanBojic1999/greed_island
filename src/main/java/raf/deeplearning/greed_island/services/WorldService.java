@@ -1,5 +1,6 @@
 package raf.deeplearning.greed_island.services;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -58,8 +59,18 @@ public class WorldService implements ApplicationRunner {
 
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
 
-    public WorldService() {
+    /**
+     * Where the levels students made themselves live: a folder the server looks in before it looks
+     * at the levels bundled in the jar, so a new level is a file dropped there and not a rebuild.
+     * Relative to where the server is started, "maps" unless greed.maps.dir (or the environment
+     * variable GREED_MAPS_DIR) says otherwise. It does not have to exist.
+     */
+    private final Path externalMapsDir;
+
+    public WorldService(@Value("${greed.maps.dir:maps}") String mapsDir) {
+        this.externalMapsDir = Paths.get(mapsDir).toAbsolutePath().normalize();
         System.err.println("+++++++++++++++++++++++++++++++++++++++++++");
+        System.out.println("Levels of your own are read from " + externalMapsDir);
         bootstrapDefaultSession();
     }
 
@@ -95,22 +106,42 @@ public class WorldService implements ApplicationRunner {
      */
     public GameMap loadMap(int mapNumber) throws Exception {
         // Classpath resource names always use '/', whatever the OS separator is.
-        String basePath = "static/map_test_beta_" + mapNumber;
-        String jsonPathStr = basePath + ".json";
-        String txtPathStr = basePath + ".txt";
+        String name = "map_test_beta_" + mapNumber;
+        String jsonPathStr = "static/" + name + ".json";
+        String txtPathStr = "static/" + name + ".txt";
+
+        Path externalJson = externalMapsDir.resolve(name + ".json");
+        Path externalTxt = externalMapsDir.resolve(name + ".txt");
 
         String targetPath;
         GameMap map;
+        // A level in the maps folder wins over the bundled one of the same number, so a student can
+        // replace a level as well as add one. Within a folder the json wins over the txt.
+        if (Files.isRegularFile(externalJson)) {
+            targetPath = externalJson.toString();
+            System.out.println("Loading JSON map from: " + targetPath);
+            map = GameMapSerializer.fromJsonFile(externalJson);
+
+        } else if (Files.isRegularFile(externalTxt)) {
+            targetPath = externalTxt.toString();
+            System.out.println("Loading TXT map from: " + targetPath);
+            map = GameMapSerializer.fromSimpleMap(targetPath);
+
         // The levels are classpath resources (inside the jar when it is run as one), not files on disk.
-        if (new ClassPathResource(jsonPathStr).exists()) {
+        } else if (new ClassPathResource(jsonPathStr).exists()) {
             targetPath = jsonPathStr;
             System.out.println("Loading JSON map from: " + jsonPathStr);
             map = GameMapSerializer.fromJsonMap(targetPath);
 
-        } else {
+        } else if (new ClassPathResource(txtPathStr).exists()) {
             targetPath = txtPathStr;
             System.out.println("JSON not found. Falling back to TXT at: " + txtPathStr);
             map = GameMapSerializer.fromSimpleMap(targetPath);
+
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "There is no map " + mapNumber + ": looked for " + name + ".json/.txt in "
+                            + externalMapsDir + " and in the levels bundled with the server.");
         }
 
         if (map == null || map.getSpaces() == null || map.getThePlayer() == null)

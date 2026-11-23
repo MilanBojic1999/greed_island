@@ -152,6 +152,13 @@ public class GameMapSerializer {
         bw.close();
     }
 
+    /** A map JSON that is a plain file on disk, as opposed to a resource on the classpath. */
+    public static GameMap fromJsonFile(Path path) throws IOException {
+        try(Reader reader = Files.newBufferedReader(path)) {
+            return gson.fromJson(reader, GameMap.class);
+        }
+    }
+
     public static GameMap fromJsonMap(String path) throws IOException {
 //        File f = new File(path);
 //        InputStream stream = GameMapSerializer.class.getResourceAsStream(path);

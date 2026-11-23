@@ -64,6 +64,52 @@ fields can be written into a level's JSON as an optional `config` object.
 from it. Omit it and one is drawn and returned anyway, so any episode can be replayed after
 the fact.
 
+## Making your own maps
+
+Needs Python 3 and nothing else. From the repo root:
+
+```
+python3 tools/gen_map.py --seed 7 --height 20 --width 40 --lakes 3 --mountains 2 --barbarians 3
+```
+
+This writes `maps/map_test_beta_100.txt` and `.json` (the first free number from 100 up) and
+prints the map. The same seed and options always give the same map. The options are `--height`,
+`--width`, `--lakes`, `--woods`, `--mountains`, `--villagers`, `--barbarians`, `--number`,
+`--gate-price`, `--merchant-budget`, `--refill-rounds` and `--max-rounds`; `--force` overwrites a
+map of the same number.
+
+The server reads the `maps/` folder next to where it is started before it reads its bundled
+levels, so a new map needs no rebuild. Start an episode on it with its number:
+
+```
+PUT /map/restart?map_number=100&game_id=env_0
+```
+
+`--greed.maps.dir=<path>` (or the environment variable `GREED_MAPS_DIR`) points the server at a
+different folder. A map in the folder with the same number as a bundled level replaces it while
+the file is there, which is why generated maps start at 100.
+
+A generated map can always be finished: the player, merchant and gate are placed on cells the
+player can walk to. That says nothing about how much loot there is or how hard the gate's price
+is to earn.
+
+**Drawing a map by hand.** Write a `.txt` and compile it:
+
+```
+python3 tools/txt_to_json_map.py path/to/map.txt     # or: ... 13 14 for map_test_beta_13/14
+```
+
+The first line is `<height> <width>`, then one line per row: `-` water, `_` pasture, `$` mountain,
+`+` woods, `>` elevation, `|` gate, and `P` player, `M` merchant, `V` villager, `B` barbarian.
+A mountain can only be entered or left over an elevation. `P`, `M`, `V` and `B` take the terrain
+of the symbol to their left, so a `P` straight after the border `-` stands in water. Without
+arguments the script converts every `map_test_beta_*.txt` that has no `.json` yet, `--force`
+rewrites existing ones and `--check` only reports. It rejects rows of the wrong length, unknown
+symbols, and maps without exactly one `P` or without a gate.
+
+`python3 tools/gen_map.py --validate <map.txt or map.json>` checks that the player can walk to the
+merchant and the gate, for generated and hand drawn maps alike.
+
 ## Implementation details
 
 Java 17, Spring Boot for the REST API, Gson for reading the level files. The six levels are
