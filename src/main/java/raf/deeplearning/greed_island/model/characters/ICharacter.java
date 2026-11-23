@@ -13,8 +13,8 @@ public interface ICharacter {
      * @param view  the crop of that map around the character, as GameMap.lookupForCharacter gives it
      */
     void interactWithWorld(GameMap world, ASpace[][] view);
-    Pair getCoordinates();
-    void setCoordinates(Pair p);
+    Pair<Number, Number> getCoordinates();
+    void setCoordinates(Pair<Number, Number> p);
     char getCharacterSymbol();
     void setCurrentSpace(ASpace space);
     ASpace getCurrentSpace();

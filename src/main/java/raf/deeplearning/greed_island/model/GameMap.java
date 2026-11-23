@@ -2,7 +2,6 @@ package raf.deeplearning.greed_island.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import raf.deeplearning.greed_island.dto.EpisodeConfigView;
 import raf.deeplearning.greed_island.model.characters.*;
 import raf.deeplearning.greed_island.model.exception.UnknownCharacter;
@@ -15,10 +14,7 @@ import raf.deeplearning.greed_island.model.spaces.factory.*;
 import raf.deeplearning.greed_island.model.utils.Pair;
 import raf.deeplearning.greed_island.model.utils.Randomizer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.BiFunction;
 
 @Getter
@@ -42,6 +38,19 @@ public class GameMap implements Runnable{
     //        System.out.println("Getting the player>>>> "+thePlayer+ " <<<< in world  "+this.hashCode());
     private Player thePlayer;
 
+    /**
+     * How many moves behind the player the barbarian's information is: it knows the space the
+     * player stood on this many moves ago and nothing newer. A static constant on purpose - a map
+     * read from JSON is allocated without running initializers, so an instance field would be 0.
+     */
+    public static final int TRAIL_DELAY = 4;
+
+    /*
+        The spaces the player has stood on, oldest first: the current one plus the TRAIL_DELAY
+        before it, seeded with the starting space. Only moves that really happened are recorded.
+        Transient and created on demand for the same reason as the randomizer.
+     */
+    private transient Deque<Pair<Number, Number>> playerMovementHistory;
     private volatile boolean running = true;
 
     /*
@@ -117,7 +126,7 @@ public class GameMap implements Runnable{
         this.spaces[height/2][width/2] = new Gate(height/2,width/2,1, GENERATED_GATE_PRICE);
 
         this.thePlayer = new Player(height/2-1,width/2-1);
-        Pair p = thePlayer.getCoordinates();
+        Pair<Number, Number> p = thePlayer.getCoordinates();
         this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(thePlayer);
         thePlayer.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
 
@@ -137,7 +146,7 @@ public class GameMap implements Runnable{
      * free space left - a character standing in the water would be worse than one that is missing.
      */
     private void addOnFreeSpace(BiFunction<Integer,Integer,ICharacter> create) {
-        Pair spot = findFreeSpace();
+        Pair<Number, Number> spot = findFreeSpace();
         if(spot == null)
             return;
 
@@ -152,17 +161,17 @@ public class GameMap implements Runnable{
      * seed decides where the NPCs start. Falls back to a scan when the draws keep missing, and
      * gives back null only when the map really has nowhere left to put anybody.
      */
-    private Pair findFreeSpace() {
+    private Pair<Number, Number> findFreeSpace() {
         for(int attempt = 0; attempt < FREE_SPACE_DRAWS; attempt++) {
             int x = randomizer.randomInt(height), y = randomizer.randomInt(width);
             if(isFreeSpace(x,y))
-                return new Pair(x,y);
+                return new Pair<Number, Number>(x,y);
         }
 
         for(int x = 0; x < height; x++)
             for(int y = 0; y < width; y++)
                 if(isFreeSpace(x,y))
-                    return new Pair(x,y);
+                    return new Pair<Number, Number>(x,y);
 
         return null;
     }
@@ -196,7 +205,7 @@ public class GameMap implements Runnable{
     }
 
     private ASpace spaceOf(ICharacter character) {
-        Pair p = character.getCoordinates();
+        Pair<Number, Number> p = character.getCoordinates();
         return this.spaces[p.getX1()][p.getX2()];
     }
 
@@ -232,7 +241,7 @@ public class GameMap implements Runnable{
             throw new UnknownCharacter(character);
         }
 
-        Pair p = character.getCoordinates();
+        Pair<Number, Number> p = character.getCoordinates();
 
         int x = p.getX1(), y = p.getX2();
         int subMatrixSize = 2*radius + 1;
@@ -265,13 +274,51 @@ public class GameMap implements Runnable{
 
     private void moveCharacterAfterCheck(ICharacter character,int x,int y) {
         this.spaces[x][y].setOccupyingCharacter(character);
-        Pair p = character.getCoordinates();
+        Pair<Number, Number> p = character.getCoordinates();
         this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(null);
         p.setX1(x);
         p.setX2(y);
         character.setCoordinates(p);
-
+        if(character instanceof Player)
+            rememberPlayerAt(x, y);
         character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
+    }
+
+    /**
+     * The history of the player's moves, created on demand (a map from JSON has none).
+     */
+    public Deque<Pair<Number, Number>> getPlayerMovementHistory() {
+        if(this.playerMovementHistory == null)
+            this.playerMovementHistory = new ArrayDeque<>();
+        return this.playerMovementHistory;
+    }
+
+    private void rememberPlayerAt(int x, int y) {
+        Deque<Pair<Number, Number>> history = getPlayerMovementHistory();
+        history.addLast(new Pair<>(x, y));
+        while(history.size() > TRAIL_DELAY + 1)
+            history.removeFirst();
+    }
+
+    /** Forgets the trail and starts it again from where the player stands now. */
+    private void restartPlayerTrail() {
+        getPlayerMovementHistory().clear();
+        if(this.thePlayer != null) {
+            Pair<Number, Number> p = this.thePlayer.getCoordinates();
+            rememberPlayerAt(p.getX1(), p.getX2());
+        }
+    }
+
+    /**
+     * The space the player stood on TRAIL_DELAY moves ago, which is all the barbarian knows about
+     * where the player is when it cannot see it. Null until the player has made that many moves.
+     */
+    public Pair<Number, Number> getDelayedPlayerPosition() {
+        Deque<Pair<Number, Number>> history = getPlayerMovementHistory();
+        if(history.size() < TRAIL_DELAY + 1)
+            return null;
+        Pair<Number, Number> oldest = history.peekFirst();
+        return new Pair<>(oldest.getX1(), oldest.getX2());
     }
 
     /**
@@ -328,16 +375,18 @@ public class GameMap implements Runnable{
      */
     public void placeCharacters() {
         for(ICharacter character:this.characters) {
-            Pair p = character.getCoordinates();
+            Pair<Number, Number> p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
             character.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
             System.out.println(character+" is occuping  "+character.getCurrentSpace());
         }
 
-        Pair p = thePlayer.getCoordinates();
+        Pair<Number, Number> p = thePlayer.getCoordinates();
         this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(thePlayer);
         thePlayer.setCurrentSpace(this.spaces[p.getX1()][p.getX2()]);
         System.out.println(thePlayer+" is occuping  "+thePlayer.getCurrentSpace());
+
+        restartPlayerTrail();
     }
 
     public void run() {
@@ -483,7 +532,7 @@ public class GameMap implements Runnable{
         String water = String.valueOf(outboundWater().getSpaceSymbol());
         int rows = full.length, columns = full[0].length;
 
-        Pair p = thePlayer.getCoordinates();
+        Pair<Number, Number> p = thePlayer.getCoordinates();
         int x = p.getX1(), y = p.getX2();
 
         int size = 2*radius + 1;
@@ -574,7 +623,7 @@ public class GameMap implements Runnable{
     private void removeFromItsSpace(ICharacter character) {
         ASpace space = character.getCurrentSpace();
         if(space == null) {
-            Pair p = character.getCoordinates();
+            Pair<Number, Number> p = character.getCoordinates();
             if(this.spaces == null || p.getX1() < 0 || p.getX1() >= this.spaces.length
                     || p.getX2() < 0 || p.getX2() >= this.spaces[0].length)
                 return;
@@ -652,11 +701,11 @@ public class GameMap implements Runnable{
             sb.append("\n");
         }
         for(ICharacter character:characters) {
-            Pair pair = character.getCoordinates();
+            Pair<Number, Number> pair = character.getCoordinates();
             sb.setCharAt((pair.getX1()*(width+1)) + pair.getX2(),character.getCharacterSymbol());
         }
 
-        Pair pair = thePlayer.getCoordinates();
+        Pair<Number, Number> pair = thePlayer.getCoordinates();
         sb.setCharAt((pair.getX1()*(width+1)) + pair.getX2(),thePlayer.getCharacterSymbol());
 
         return sb.toString();
@@ -667,7 +716,7 @@ public class GameMap implements Runnable{
         this.characters = characters;
         for(ICharacter character : this.characters) {
             System.out.println(character.toString());
-            Pair p = character.getCoordinates();
+            Pair<Number, Number> p = character.getCoordinates();
             this.spaces[p.getX1()][p.getX2()].setOccupyingCharacter(character);
         }
     }
@@ -694,6 +743,7 @@ public class GameMap implements Runnable{
         this.turnBased = false;
         this.running = true;
         clearEvents();
+        restartPlayerTrail();
         applyConfig();
     }
 

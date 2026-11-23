@@ -53,12 +53,12 @@ public class Merchant implements INonPlayableCharacter{
     }
 
     @Override
-    public Pair getCoordinates() {
-        return new Pair(x,y);
+    public Pair<Number, Number> getCoordinates() {
+        return new Pair<Number, Number>(x,y);
     }
 
     @Override
-    public void setCoordinates(Pair p) {
+    public void setCoordinates(Pair<Number, Number> p) {
         this.setX(p.getX1());
         this.setY(p.getX2());
     }

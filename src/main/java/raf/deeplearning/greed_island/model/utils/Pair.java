@@ -9,6 +9,6 @@ import lombok.ToString;
 @Setter
 @AllArgsConstructor
 @ToString
-public class Pair {
+public class Pair<I extends Number, I1 extends Number> {
     int x1,x2;
 }

@@ -14,7 +14,7 @@ public class CharacterAdapter extends TypeAdapter<ICharacter> {
     public void write(JsonWriter out, ICharacter value) throws IOException {
         out.beginObject();
         out.name("className").value(value.getClass().getSimpleName());
-        Pair p = value.getCoordinates();
+        Pair<Number, Number> p = value.getCoordinates();
         out.name("x").value(p.getX1());
         out.name("y").value(p.getX2());
         if(value instanceof Merchant) {

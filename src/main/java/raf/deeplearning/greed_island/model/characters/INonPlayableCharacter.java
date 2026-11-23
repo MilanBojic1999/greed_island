@@ -25,7 +25,7 @@ public interface INonPlayableCharacter extends ICharacter{
      * where the chase used to stall.
      */
     default void chaseOrWander(GameMap world, ASpace[][] view) {
-        Pair here = getCoordinates();
+        Pair<Number, Number> here = getCoordinates();
         int x = here.getX1(), y = here.getX2();
 
         for(int i = 0; i < view.length; i++) {
@@ -55,7 +55,7 @@ public interface INonPlayableCharacter extends ICharacter{
      * always sends the character the same way.
      */
     default void wander(GameMap world) {
-        Pair here = getCoordinates();
+        Pair<Number, Number> here = getCoordinates();
         int x = here.getX1(), y = here.getX2();
 
         switch (world.randomizer().randomMove()) {
